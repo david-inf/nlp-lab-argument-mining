@@ -10,9 +10,9 @@ def main(opts):
 
 if __name__ == "__main__":
     from cmd_args import parse_args
-    opts = parse_args()
+    args = parse_args()
     try:
-        main(opts)
+        main(args)
     except Exception:
         import ipdb
         ipdb.post_mortem()

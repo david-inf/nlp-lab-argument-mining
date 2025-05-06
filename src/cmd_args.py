@@ -12,8 +12,9 @@ parser.add_argument("--view", action="store_true",  # default False
 
 
 def parse_args():
+    """Parse arguments given via CLI"""
     args = parser.parse_args()
-    with open(args.config, "r") as f:
+    with open(args.config, "r", encoding="utf-8") as f:
         configs = yaml.safe_load(f)  # return dict
     opts = SimpleNamespace(**configs)
 
