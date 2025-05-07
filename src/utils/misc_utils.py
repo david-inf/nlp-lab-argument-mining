@@ -1,13 +1,14 @@
 """Miscellaneous of utilities"""
 
-import torch
-import random
-import numpy as np
 import logging
+import random
+import torch
+import numpy as np
 from rich.logging import RichHandler
 
 
 def N(x: torch.Tensor):
+    """Get pure value"""
     # detach from computational graph
     # send back to cpu
     # numpy ndarray
@@ -15,6 +16,7 @@ def N(x: torch.Tensor):
 
 
 def get_logger():
+    """Logging mechanism"""
     FORMAT = "%(message)s"
     logging.basicConfig(
         level="INFO", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
@@ -26,7 +28,7 @@ LOG = get_logger()
 
 
 def set_seeds(seed):
-    """ Set seeds for all random number generators """
+    """Set seeds for all random number generators"""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -45,12 +47,13 @@ def update_yaml(opts, key, value):
     # update the opts object
     opts.__dict__[key] = value
     # update the yaml file
-    with open(opts.config, "w") as f:
+    with open(opts.config_file, "w", encoding="utf-8") as f:
         # dump the updated opts to the yaml file
         yaml.dump(opts.__dict__, f)
 
 
 def visualize(model, model_name, input_data):
+    """Model inspection"""
     from torchinfo import summary
     from rich.console import Console
 

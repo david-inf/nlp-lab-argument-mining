@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 import argparse
 import yaml
+from utils.misc_utils import LOG
 
 
 parser = argparse.ArgumentParser()
@@ -11,6 +12,10 @@ parser.add_argument("--config",
                     help="YAML configuration file")
 parser.add_argument("--view", action="store_true",  # default False
                     help="Visualize model architecture, no training")
+
+
+def print_info(opts):
+    LOG.info("Training for num_epochs=%s", opts.num_epochs)
 
 
 def parse_args():
@@ -22,5 +27,6 @@ def parse_args():
 
     opts.visualize = args.view
     opts.config_file = args.config
+    print_info(opts)
 
     return opts
