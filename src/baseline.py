@@ -9,7 +9,7 @@ from sklearn.metrics import classification_report, balanced_accuracy_score
 from datasets import load_from_disk
 from transformers import pipeline
 
-from utils import set_seeds, LOG
+from utils.misc_utils import set_seeds, LOG
 
 
 def get_dataset(opts):
@@ -48,6 +48,7 @@ def main(opts):
     if opts.extractor == "distilbert":
         train_features = disbert_features(trainset["text"])
         val_features = disbert_features(valset["text"])
+    # TODO: SBERT and others integration
     else:
         raise ValueError(f"Unknown extractor {opts.extractor}")
 

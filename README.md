@@ -1,5 +1,25 @@
 # BERT for scientific literature argument mining
 
+<details>
+<summary>Code organization</summary>
+
+- `data/`
+  - `finetuning/`
+  - `inference/`
+- `src/`
+  - `ckps/`
+  - `configs/`
+  - `models/`
+  - `results/`
+  - `utils/` various utilities in `misc_utils.py` and `train_utils.py`
+  - `baseline.py` baseline with machine learning models to improve
+  - `cmd_args.py` main programs arguments
+  - `ftdata.py` utilities for loading datasets
+  - `main_disbert.py` DistilBERT finetuning
+  - `train.py` training loop
+
+</details>
+
 
 ## Phase 1: Finetuning BERT for argument component detection
 

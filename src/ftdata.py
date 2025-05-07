@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from datasets import load_from_disk, Dataset
 from transformers import DataCollatorWithPadding, PreTrainedTokenizer
 
-from utils import set_seeds, LOG
+from utils.misc_utils import set_seeds, LOG
 
 
 class MakeDataLoaders:

@@ -7,7 +7,7 @@ from accelerate import Accelerator
 
 from models.distilbert import get_distilbert
 from ftdata import get_loaders
-from utils import set_seeds, LOG, visualize
+from utils.misc_utils import set_seeds, LOG, visualize
 from train import train_loop
 
 

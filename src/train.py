@@ -7,7 +7,8 @@ from torch.optim import Optimizer
 from transformers import PreTrainedModel
 from accelerate import Accelerator
 
-from utils import N, accuracy, LOG, AverageMeter
+from utils.misc_utils import N, LOG
+from utils.train_utils import accuracy, AverageMeter
 
 
 def test(opts, model: PreTrainedModel, accelerator: Accelerator, loader):
@@ -21,9 +22,9 @@ def test(opts, model: PreTrainedModel, accelerator: Accelerator, loader):
     with torch.no_grad():
         for batch in loader:
             # Get data
-            input_ids = batch["input_ids"].to(opts.device)
-            attention_mask = batch["attention_mask"].to(opts.device)
-            y = batch["labels"].to(opts.device)
+            input_ids = batch["input_ids"]
+            attention_mask = batch["attention_mask"]
+            y = batch["labels"]
             # Forward pass
             output = model(input_ids=input_ids, attention_mask=attention_mask)
             with accelerator.autocast():
