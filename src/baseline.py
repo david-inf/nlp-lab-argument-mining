@@ -1,8 +1,10 @@
+"""Baseline to improve with finetuning"""
 
 import numpy as np
 
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, balanced_accuracy_score
 
 from datasets import load_from_disk
 from transformers import pipeline
@@ -63,11 +65,15 @@ def main(opts):
         raise ValueError(f"Unknown classifier {opts.classifier}")
 
     clf.fit(train_features, train_labels)
-    train_acc = clf.score(train_features, train_labels)
-    val_acc = clf.score(val_features, val_labels)
+    train_bal_acc = balanced_accuracy_score(train_labels, clf.predict(train_features))
+    val_bal_acc = balanced_accuracy_score(val_labels, clf.predict(val_features))
 
-    LOG.info("train_acc=%.3f", train_acc)
-    LOG.info("val_acc=%.3f", val_acc)
+    LOG.info("Training classification report")
+    LOG.info(classification_report(train_labels, clf.predict(train_features), digits=3))
+    LOG.info("train_bal_acc=%.3f", train_bal_acc)
+    LOG.info("Validation classification report")
+    LOG.info(classification_report(val_labels, clf.predict(val_features), digits=3))
+    LOG.info("val_bal_acc=%.3f", val_bal_acc)
 
 
 if __name__ == "__main__":

@@ -24,6 +24,13 @@ def get_logger():
 LOG = get_logger()
 
 
+def accuracy(logits, labels):
+    """Compute accuracy during pytorch training"""
+    pred = np.argmax(logits, axis=1)
+    acc = np.mean(pred == labels)
+    return acc
+
+
 class AverageMeter:
     """Computes and stores the average and current value"""
 
@@ -80,3 +87,33 @@ def update_yaml(opts, key, value):
     with open(opts.config, "w") as f:
         # dump the updated opts to the yaml file
         yaml.dump(opts.__dict__, f)
+
+
+def visualize(model, model_name, input_data):
+    from torchinfo import summary
+    from rich.console import Console
+
+    input_ids = input_data["input_ids"]
+    attention_mask = input_data["attention_mask"]
+    out = model(input_ids=input_ids, attention_mask=attention_mask)
+
+    console = Console()
+    console.print(f"Model model={model_name}, computed output_shape={out.logits.shape}")
+
+    model_stats = summary(
+        model,
+        input_data=input_data,
+        col_names=[
+            # "input_size",
+            "output_size",
+            "num_params",
+            "params_percent",
+            # "mult_adds",
+            "trainable",
+        ],
+        row_settings=("var_names",),
+        col_width=18,
+        depth=8,
+        verbose=0,
+    )
+    console.print(model_stats)

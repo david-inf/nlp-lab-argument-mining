@@ -5,7 +5,11 @@ from peft import LoraConfig, TaskType, get_peft_model
 
 
 def get_distilbert(opts):
-    """Get DistilBERT model and its tokenizer"""
+    """
+    Get DistilBERT model and its tokenizer
+    - Get DistilBERT with a given finetuning setting
+    - No device will be set
+    """
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
     model = DistilBertForSequenceClassification.from_pretrained(
         "distilbert-base-uncased", num_labels=2)
@@ -44,5 +48,4 @@ def get_distilbert(opts):
     else:
         raise ValueError(f"Unknown training setting {opts.ft_setting}")
 
-    model = model.to(opts.device)
     return tokenizer, model

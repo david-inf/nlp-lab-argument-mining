@@ -1,15 +1,14 @@
 
-import torch
 import random
-import numpy as np
 from types import SimpleNamespace
+import torch
+import numpy as np
 
 from torch.utils.data import DataLoader
 from datasets import load_from_disk, Dataset
 from transformers import DataCollatorWithPadding, PreTrainedTokenizer
 
 from utils import set_seeds, LOG
-from models.distilbert import get_distilbert
 
 
 class MakeDataLoaders:
@@ -77,6 +76,7 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
 
 def main(opts):
     # Get tokenizer
+    from models.distilbert import get_distilbert
     tokenizer, _ = get_distilbert(opts)
     # Get dataloaders
     train_loader, val_loader = get_loaders(opts, tokenizer)

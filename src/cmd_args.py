@@ -1,3 +1,4 @@
+"""CLI arguments for main programs"""
 
 from types import SimpleNamespace
 import argparse
@@ -5,7 +6,8 @@ import yaml
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", default="src/configs/config.yaml",
+parser.add_argument("--config",
+                    default="src/configs/distilbert/distilbert_head.yaml",
                     help="YAML configuration file")
 parser.add_argument("--view", action="store_true",  # default False
                     help="Visualize model architecture, no training")
@@ -19,6 +21,6 @@ def parse_args():
     opts = SimpleNamespace(**configs)
 
     opts.visualize = args.view
-    opts.config = args.config
+    opts.config_file = args.config
 
     return opts

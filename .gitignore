@@ -164,3 +164,4 @@ src/ckps
 /data
 *.ods
 *.ods#
+src/configs/generate_config.py
