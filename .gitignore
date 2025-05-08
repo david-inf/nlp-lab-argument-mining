@@ -164,4 +164,5 @@ src/ckps
 /data
 *.ods
 *.ods#
-src/configs/generate_config.py
+# src/configs/generate_config.py
+src/models/distilbert.py

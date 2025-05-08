@@ -2,7 +2,7 @@
 import os
 import numpy as np
 from transformers import PreTrainedModel
-from accelerate import Accelerator
+# from accelerate import Accelerator
 from utils.misc_utils import LOG, update_yaml
 
 
@@ -69,23 +69,27 @@ class EarlyStopping:
         min_delta: minimum change for improvement
     """
 
-    def __init__(self, opts):
+    def __init__(self, opts, verbose=True):
         self._opts = opts
         self.patience = opts.early_stopping["patience"]
         self.min_delta = opts.early_stopping["min_delta"]
         self.counter = 0
         self.best_score = None
         self.early_stop = False
+        self.verbose = verbose
 
     def __call__(self, val_acc, model: PreTrainedModel):
         score = val_acc
         if self.best_score is None:
             # initialize best score
             self.best_score = score
-            self.checkpoint(model)
+            self.checkpoint(model)  # first model
         elif score < self.best_score + self.min_delta:
-            # no improvement
+            # no improvement seen
             self.counter += 1
+            if self.verbose:
+                LOG.info("Early stopping counter=%s out of patience=%s",
+                         self.counter, self.patience)
             if self.counter >= self.patience:
                 # stop training when we see no improvements
                 self.early_stop = True
@@ -96,9 +100,10 @@ class EarlyStopping:
             self.best_score = score
             self.checkpoint(model)
             self.counter = 0
-    
+
     def checkpoint(self, model: PreTrainedModel):
         """Save current best model"""
+        LOG.info("Updated best_score=%.3f", self.best_score)
         save_model(self._opts, model)
 
     # def checkpoint(self, accelerator: Accelerator):

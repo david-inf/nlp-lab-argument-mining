@@ -1,3 +1,4 @@
+"""Main program for finetuning a BERT family model"""
 
 import os
 # from comet_ml import start
@@ -8,22 +9,22 @@ from accelerate import Accelerator
 from transformers import set_seed, get_cosine_schedule_with_warmup
 
 from ftdata import get_loaders
-from models.distilbert import get_distilbert
+from models.bert import get_bert
 from utils.misc_utils import LOG, visualize, update_yaml
 from train import train_loop
 
 
 def get_model(opts):
-    """Get DistilBERT"""
-    if opts.model == "distilbert":
-        tokenizer, model = get_distilbert(opts)
+    """Get model to finetune"""
+    if opts.model in ("distilbert", "scibert"):
+        tokenizer, model = get_bert(opts)
     else:
         raise ValueError(f"Unknown model {opts.model}")
     return tokenizer, model
 
 
 def main(opts):
-    """DistilBERT finetuning"""
+    """BERT model finetuning"""
     set_seed(opts.seed)
 
     # Checkpointing
@@ -36,20 +37,27 @@ def main(opts):
     # opts.device = accelerator.device
     # LOG.info("Accelerator device=%s", opts.device)
 
-    # Get DistilBERT and its tokenizer (cpu)
-    tokenizer, model = get_distilbert(opts)
+    # Get BERT and its tokenizer (cpu)
+    tokenizer, model = get_model(opts)
     # Get loaders
     with accelerator.main_process_first():
         train_loader, val_loader = get_loaders(opts, tokenizer)
 
-    # Prepare training
-    cudnn.benchmark = True
+    # Optimizer
     optimizer = optim.AdamW(
-        model.parameters(), lr=opts.learning_rate, weight_decay=opts.weight_decay)
+        model.parameters(),
+        lr=opts.learning_rate,
+        weight_decay=opts.weight_decay
+    )
     total_steps = opts.num_epochs * len(train_loader)
     scheduler = get_cosine_schedule_with_warmup(
-        optimizer, int(opts.warmup*total_steps), total_steps)
+        optimizer,
+        int(opts.warmup*total_steps),
+        total_steps
+    )
 
+    # Prepare training
+    cudnn.benchmark = True
     model, optimizer, train_loader, val_loader = accelerator.prepare(
         model, optimizer, train_loader, val_loader)
     accelerator.register_for_checkpointing(scheduler)
@@ -65,9 +73,9 @@ def view_model(opts):
     tokenizer, model = get_model(opts)
     # Random data for input_ids and attention_mask
     input_ids = torch.randint(
-        0, tokenizer.vocab_size, (opts.batch_size, 128)).to(opts.device)
+        0, tokenizer.vocab_size, (opts.batch_size, 128))
     attention_mask = torch.ones(
-        (opts.batch_size, 128), dtype=torch.int64).to(opts.device)
+        (opts.batch_size, 128), dtype=torch.int64)
     input_data = {"input_ids": input_ids, "attention_mask": attention_mask}
     # Visualize model
     visualize(model, opts.model, input_data)

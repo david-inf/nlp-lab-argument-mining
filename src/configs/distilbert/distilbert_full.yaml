@@ -1,15 +1,15 @@
 batch_size: 32
-checkpoint: src/ckps/distilbert/distilbert_head
+checkpoint: src/ckps/distilbert/distilbert_full
 checkpoint_dir: src/ckps/distilbert
 checkpoint_every: null
-config_file: src/configs/distilbert/distilbert_head.yaml
+config_file: src/configs/distilbert/distilbert_full.yaml
 dataset: abstrct
 early_stopping:
-  min_delta: 0.05
+  min_delta: 0.003
   patience: 4
-experiment_name: distilbert_head
+experiment_name: distilbert_full
 ft_setting:
-  type: head
+  type: full
 learning_rate: 5.0e-05
 log_every: 20
 max_length: 128
