@@ -160,5 +160,11 @@ cython_debug/
 #.idea/
 
 /data/inference
-src/ckps
+/data/finetuning
 /data
+
+src/ckps
+
+src/commands.sh
+*.ods
+*.ods#
