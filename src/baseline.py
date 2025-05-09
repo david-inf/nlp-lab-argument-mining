@@ -16,6 +16,10 @@ def get_dataset(opts):
     """Dataset splits"""
     if opts.dataset == "abstrct":
         dataset = load_from_disk("data/finetuning/abstrct")
+    elif opts.dataset == "aae2":
+        dataset = load_from_disk("data/finetuning/aae2")
+    elif opts.dataset == "merged":
+        dataset = load_from_disk("data/finetuning/merged")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
     return dataset["train"], dataset["validation"]
@@ -44,6 +48,9 @@ def bert_features(texts, bert_name):
     return np.vstack((features))
 
 
+# TODO: sbert_features()
+
+
 def main(opts):
     """Extract features and train classifier"""
     set_seeds(opts.seed)
@@ -56,7 +63,7 @@ def main(opts):
     if opts.extractor in ("distilbert", "scibert"):
         train_features = bert_features(trainset["text"], opts.extractor)
         val_features = bert_features(valset["text"], opts.extractor)
-    # TODO: SBERT and others integration
+    # TODO: SBERT and other integrations
     else:
         raise ValueError(f"Unknown extractor {opts.extractor}")
 
@@ -92,7 +99,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="abstrct", choices=["abstrct"],
+    parser.add_argument("--dataset", default="abstrct", choices=["abstrct", "aae2", "merged"],
                         help="Choose dataset to obtain baseline with")
     parser.add_argument("--extractor", default="distilbert", choices=["distilbert", "scibert"],
                         help="Choose the feature extractor")

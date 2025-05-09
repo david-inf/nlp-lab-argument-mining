@@ -1,6 +1,5 @@
 
 import random
-from types import SimpleNamespace
 import torch
 import numpy as np
 
@@ -13,6 +12,7 @@ from utils.misc_utils import set_seeds, LOG
 
 class MakeDataLoaders:
     """Load data"""
+
     def __init__(self, opts, tokenizer: PreTrainedTokenizer, trainset: Dataset, valset: Dataset):
         set_seeds(opts.seed)
         generator = torch.Generator().manual_seed(opts.seed)
@@ -44,6 +44,10 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     # 1) Get dataset splits
     if opts.dataset == "abstrct":
         dataset = load_from_disk("data/finetuning/abstrct")
+    elif opts.dataset == "aae2":
+        dataset = load_from_disk("data/finetuning/aae2")
+    elif opts.dataset == "merged":
+        dataset = load_from_disk("data/finetuning/merged")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
 
@@ -75,54 +79,47 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
 
 
 def main(opts):
+    # TODO: class distribution on full train-val datasets
     # Get tokenizer
-    from models.distilbert import get_distilbert
-    tokenizer, _ = get_distilbert(opts)
-    # Get dataloaders
+    from models import get_bert
+    tokenizer: PreTrainedTokenizer = get_bert(opts)[0]
+    # TODO: sbert and other integrations
+    # Get loaders
     train_loader, val_loader = get_loaders(opts, tokenizer)
 
     LOG.info("Train data")
+    LOG.info("num_batches_train=%s", len(train_loader))
+    LOG.info("num_batches_val=%s", len(val_loader))
     for batch_idx, batch in enumerate(train_loader):
         # Get data
-        input_ids = batch["input_ids"].to(opts.device)
-        attn_mask = batch["attention_mask"].to(opts.device)
-        labels = batch["labels"].to(opts.device)
+        input_ids = batch["input_ids"]
+        attn_mask = batch["attention_mask"]
+        labels = batch["labels"]
         class_distrib = torch.bincount(labels)
         # Inspect train data
         LOG.info("input_ids=%s\nattention_mask=%s\nlabels=%s",
                  input_ids.shape, attn_mask.shape, labels.shape)
         LOG.info(f"distrib={class_distrib/labels.size(0)}")
 
-        if batch_idx == 2:
-            break
-    print()
-    LOG.info("Validation data")
-    for batch_idx, batch in enumerate(val_loader):
-        # Get data
-        input_ids = batch["input_ids"].to(opts.device)
-        attn_mask = batch["attention_mask"].to(opts.device)
-        labels = batch["labels"].to(opts.device)
-        class_distrib = torch.bincount(labels)
-        # Inspect validation data
-        LOG.info("input_ids=%s\nattention_mask=%s\nlabels=%s",
-                 input_ids.shape, attn_mask.shape, labels.shape)
-        LOG.info(f"distrib={class_distrib/labels.size(0)}")
+        # Inspect first sample
+        sample_id = 0
+        sample_tokens = tokenizer.convert_ids_to_tokens(input_ids[sample_id])
+        sample_tokens_no_pad = [token for token in sample_tokens if token != "[PAD]"]
+        LOG.info("%s --> %s", labels[sample_id], sample_tokens_no_pad)
+        print()
 
-        if batch_idx == 2:
+        if batch_idx == 4:
             break
 
 
 if __name__ == "__main__":
-    configs = {
-        "seed": 42, "batch_size": 32, "num_workers": 2, "device": "cpu",
-        "dataset": "abstrct", "max_length": 128,
-        "model": "distilbert", "ft_setting": {"type": "head"},
-    }
-    configs = SimpleNamespace(**configs)
+    from cmd_args import parse_args
+    configs = parse_args()
     set_seeds(configs.seed)
 
     try:
         main(configs)
     except Exception:
-        from ipdb import set_trace
-        set_trace()
+        import ipdb, traceback, sys
+        traceback.print_exc()
+        ipdb.post_mortem(sys.exc_info()[2])

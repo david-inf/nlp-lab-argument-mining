@@ -18,6 +18,7 @@ def get_model(opts):
     """Get model to finetune"""
     if opts.model in ("distilbert", "scibert"):
         tokenizer, model = get_bert(opts)
+    # TODO: sbert and other integrations
     else:
         raise ValueError(f"Unknown model {opts.model}")
     return tokenizer, model
@@ -25,7 +26,7 @@ def get_model(opts):
 
 def main(opts):
     """BERT model finetuning"""
-    set_seed(opts.seed)
+    set_seed(opts.seed)  # from transformers
 
     # Checkpointing
     os.makedirs(opts.checkpoint_dir, exist_ok=True)
@@ -34,8 +35,7 @@ def main(opts):
 
     # Accelerator
     accelerator = Accelerator(mixed_precision="fp16", project_dir=output_path)
-    # opts.device = accelerator.device
-    # LOG.info("Accelerator device=%s", opts.device)
+    LOG.info("Accelerator device=%s", accelerator.device)
 
     # Get BERT and its tokenizer (cpu)
     tokenizer, model = get_model(opts)
@@ -56,7 +56,7 @@ def main(opts):
         total_steps
     )
 
-    # Prepare training
+    # Prepare training -> send to device
     cudnn.benchmark = True
     model, optimizer, train_loader, val_loader = accelerator.prepare(
         model, optimizer, train_loader, val_loader)
@@ -70,13 +70,16 @@ def main(opts):
 def view_model(opts):
     """DistilBERT inspection"""
     # Get BERT and tokenizer
+    # TODO: sbert and other integrations
     tokenizer, model = get_model(opts)
+
     # Random data for input_ids and attention_mask
     input_ids = torch.randint(
         0, tokenizer.vocab_size, (opts.batch_size, 128))
     attention_mask = torch.ones(
         (opts.batch_size, 128), dtype=torch.int64)
     input_data = {"input_ids": input_ids, "attention_mask": attention_mask}
+
     # Visualize model
     visualize(model, opts.model, input_data)
 

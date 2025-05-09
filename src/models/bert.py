@@ -35,17 +35,6 @@ def _finetuning_setting(opts, tokenizer: AutoTokenizer, model: AutoModelForSeque
         # train all parameters
         pass
 
-    # elif ft_setting.type == "head":
-    #     # train just the mlp after embeddings
-    #     # freeze all layers
-    #     for param in model.base_model.parameters():
-    #         param.requires_grad = False
-    #     # unfreeze the last layer
-    #     for param in model.pre_classifier.parameters():
-    #         param.requires_grad = False
-    #     for param in model.classifier.parameters():
-    #         param.requires_grad = True
-
     elif ft_setting.type == "lora":
         peft_config = LoraConfig(
             task_type=TaskType.SEQ_CLS, inference_mode=False,

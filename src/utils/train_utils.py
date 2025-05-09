@@ -17,7 +17,7 @@ def save_model(opts, model: PreTrainedModel, fname=None):
     """Save a pretrained model"""
     if not fname:
         # fname = f"e_{reached_epoch:02d}_{opts.experiment_name}"
-        fname = f"{opts.experiment_name}"
+        fname = opts.experiment_name
     os.makedirs(opts.checkpoint_dir, exist_ok=True)
     output_path = os.path.join(opts.checkpoint_dir, fname)
 

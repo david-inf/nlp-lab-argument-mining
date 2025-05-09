@@ -1,15 +1,16 @@
 batch_size: 32
-checkpoint: src/ckps/distilbert/distilbert_lora_q_2
+checkpoint: src/ckps/distilbert/distilbert_lora_q_2_abstrct
 checkpoint_dir: src/ckps/distilbert
 checkpoint_every: null
-config_file: src/configs/distilbert/distilbert_lora_q_2.yaml
+config_file: src/configs/distilbert/distilbert_lora_q_2_abstrct.yaml
 dataset: abstrct
 early_stopping:
-  min_delta: 0.003
-  patience: 4
-experiment_name: distilbert_lora_q_2
+  min_delta: 0.002
+  patience: 5
+experiment_name: distilbert_lora_q_2_abstrct
 ft_setting:
   alpha: 8
+  ftname: lora_q_2
   rank: 2
   target_modules:
   - q_lin
