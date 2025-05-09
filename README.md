@@ -55,7 +55,7 @@ Use a feature extraction pipeline to obtain a baseline to improve with finetunin
 
 ### :two: Finetuning
 
-- `python src/main_bert.py --config src/configs/distilbert/distilbert_full_merged.yaml`
+- `python src/main.py --config src/configs/distilbert/distilbert_full_merged.yaml`
 
 
 ## Phase 2: Deploy BERT on medical literature

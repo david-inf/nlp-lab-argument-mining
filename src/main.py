@@ -9,7 +9,7 @@ from accelerate import Accelerator
 from transformers import set_seed, get_cosine_schedule_with_warmup
 
 from ftdata import get_loaders
-from models.bert import get_bert
+from models.distilbert import get_bert
 from utils.misc_utils import LOG, visualize, update_yaml
 from train import train_loop
 
