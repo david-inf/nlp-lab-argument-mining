@@ -168,3 +168,4 @@ src/ckps
 src/commands.sh
 *.ods
 *.ods#
+inference_data.py

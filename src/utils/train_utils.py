@@ -107,6 +107,7 @@ class EarlyStopping:
         save_model(self._opts, model)
 
     # def checkpoint(self, accelerator: Accelerator):
+    # TODO: make work for multi_gpu
     #     """Current best accelerator state"""
     #     accelerator.save_state()
     #     LOG.info("Saved Accelerator state at path=%s", self._opts.checkpoint)

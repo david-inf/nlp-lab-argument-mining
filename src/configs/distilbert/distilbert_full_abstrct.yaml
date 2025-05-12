@@ -10,6 +10,7 @@ early_stopping:
 experiment_name: distilbert_full_abstrct
 ft_setting:
   ftname: full
+  lr_head: 0.01
   type: full
 learning_rate: 5.0e-05
 log_every: 20

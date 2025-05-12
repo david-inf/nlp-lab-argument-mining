@@ -3,10 +3,10 @@
 import os
 # from comet_ml import start
 import torch
-from torch import optim
+from torch.optim import AdamW
 from torch.backends import cudnn
 from accelerate import Accelerator
-from transformers import set_seed, get_cosine_schedule_with_warmup
+from transformers import set_seed, get_cosine_schedule_with_warmup, PreTrainedModel
 
 from ftdata import get_loaders
 from models.distilbert import get_bert
@@ -22,6 +22,33 @@ def get_model(opts):
     else:
         raise ValueError(f"Unknown model {opts.model}")
     return tokenizer, model
+
+
+def get_optimization(opts, model: PreTrainedModel, train_loader):
+    """Optimizer and LRScheduler settings"""
+    configs = opts.ft_setting  # dict
+    head_params = [p for name, p in model.named_parameters()
+                   if "classifier" in name]
+    backbone_params = [
+        p for name, p in model.named_parameters() if "classifier" not in name]
+    params = [
+        {"params": head_params, "lr": configs["lr_head"]},
+        {"params": backbone_params},
+    ]
+    optimizer = AdamW(
+        params,
+        lr=opts.learning_rate,
+        weight_decay=opts.weight_decay
+    )
+
+    total_steps = opts.num_epochs * len(train_loader)
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer,
+        int(opts.warmup*total_steps),
+        total_steps
+    )
+
+    return optimizer, scheduler
 
 
 def main(opts):
@@ -44,17 +71,7 @@ def main(opts):
         train_loader, val_loader = get_loaders(opts, tokenizer)
 
     # Optimizer
-    optimizer = optim.AdamW(
-        model.parameters(),
-        lr=opts.learning_rate,
-        weight_decay=opts.weight_decay
-    )
-    total_steps = opts.num_epochs * len(train_loader)
-    scheduler = get_cosine_schedule_with_warmup(
-        optimizer,
-        int(opts.warmup*total_steps),
-        total_steps
-    )
+    optimizer, scheduler = get_optimization(opts, model, train_loader)
 
     # Prepare training -> send to device
     cudnn.benchmark = True
@@ -64,7 +81,8 @@ def main(opts):
 
     # Training
     LOG.info("Running experiment_name=%s", opts.experiment_name)
-    train_loop(opts, model, optimizer, scheduler, accelerator, train_loader, val_loader)
+    train_loop(opts, model, optimizer, scheduler,
+               accelerator, train_loader, val_loader)
 
 
 def view_model(opts):
@@ -93,6 +111,8 @@ if __name__ == "__main__":
         else:
             main(args)
     except Exception:
-        import ipdb, traceback, sys
+        import ipdb
+        import traceback
+        import sys
         traceback.print_exc()
         ipdb.post_mortem(sys.exc_info()[2])

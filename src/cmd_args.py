@@ -8,7 +8,7 @@ from utils.misc_utils import LOG
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config",
-                    default="src/configs/distilbert/distilbert_head.yaml",
+                    default="src/configs/distilbert/distilbert_full_abstrct.yaml",
                     help="YAML configuration file")
 parser.add_argument("--view", action="store_true",  # default False
                     help="Visualize model architecture, no training")

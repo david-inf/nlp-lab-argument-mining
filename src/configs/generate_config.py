@@ -20,7 +20,7 @@ def gen_configs(new_params):
 
     # Checkpoint directory
     if configs.get("checkpoint_dir") is None:
-        output_dir = os.path.join("src/ckps", configs["model"])
+        output_dir = os.path.join("src/ckpts", configs["model"])
         configs["checkpoint_dir"] = output_dir
     os.makedirs(configs["checkpoint_dir"], exist_ok=True)
 
@@ -40,15 +40,18 @@ def gen_configs(new_params):
 
 if __name__ == "__main__":
     MODEL = "distilbert"
-    DATASET = "merged"
-    NUM_EPOCHS = 30
+    DATASET = "abstrct"
+    NUM_EPOCHS = 50
 
     new_configs = [
         # Full finetuning
-        # {"model": MODEL, "dataset": DATASET, "max_length": 128,
-        #  "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
-        #  "ft_setting": {"type": "full", "ftname": "full"}, "early_stopping": {"patience": 5, "min_delta": 0.002},
-        # },
+        {"model": MODEL, "dataset": DATASET, "max_length": 128,
+         "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
+         "early_stopping": {"patience": 5, "min_delta": 0.002},
+         "ft_setting": {
+             "type": "full", "ftname": "full", "lr_head": 0.001
+         }
+         },
         # LoRA finetuning
         # {"model": MODEL, "dataset": DATASET, "max_length": 128,
         #  "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
@@ -61,8 +64,10 @@ if __name__ == "__main__":
         #  "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
         #  "early_stopping": {"patience": 5, "min_delta": 0.002},
         #  "ft_setting": {
-        #      "type": "lora", "rank": 4, "alpha": 8, "target_modules": ["q_lin"],
-        #      "ftname": "lora_q_4"},
+        #      "type": "lora", "ftname": "lora_qv_4", "rank": 2, "alpha": 8,
+        #      "target_modules": ["q_lin", "v_lin"],
+        #      "lr_head": 0.01,
+        #      },
         # },
     ]
 
