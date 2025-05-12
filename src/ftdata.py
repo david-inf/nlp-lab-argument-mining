@@ -5,16 +5,16 @@ import numpy as np
 
 from torch.utils.data import DataLoader
 from datasets import load_from_disk, Dataset
-from transformers import DataCollatorWithPadding, PreTrainedTokenizer
+from transformers import set_seed, DataCollatorWithPadding, PreTrainedTokenizer
 
-from utils.misc_utils import set_seeds, LOG
+from utils import LOG
 
 
 class MakeDataLoaders:
     """Load data"""
 
     def __init__(self, opts, tokenizer: PreTrainedTokenizer, trainset: Dataset, valset: Dataset):
-        set_seeds(opts.seed)
+        set_seed(opts.seed)
         generator = torch.Generator().manual_seed(opts.seed)
         collate_fn = DataCollatorWithPadding(
             tokenizer=tokenizer,
@@ -87,7 +87,6 @@ def main(opts):
     # Get loaders
     train_loader, val_loader = get_loaders(opts, tokenizer)
 
-    LOG.info("Train data")
     LOG.info("num_batches_train=%s", len(train_loader))
     LOG.info("num_batches_val=%s", len(val_loader))
     for batch_idx, batch in enumerate(train_loader):
@@ -115,7 +114,7 @@ def main(opts):
 if __name__ == "__main__":
     from cmd_args import parse_args
     configs = parse_args()
-    set_seeds(configs.seed)
+    set_seed(configs.seed)
 
     try:
         main(configs)
