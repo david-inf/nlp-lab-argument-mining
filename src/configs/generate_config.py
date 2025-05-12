@@ -19,6 +19,7 @@ def gen_configs(new_params):
         configs["experiment_name"] = exp_name
 
     # Checkpoint directory
+    # TODO: mettere la directory direttamente col name
     if configs.get("checkpoint_dir") is None:
         output_dir = "src/ckpts"
         configs["checkpoint_dir"] = output_dir

@@ -2,7 +2,7 @@
 
 import os
 from types import SimpleNamespace
-# from comet_ml import start
+
 import torch
 from torch.optim import AdamW
 from torch.backends import cudnn
