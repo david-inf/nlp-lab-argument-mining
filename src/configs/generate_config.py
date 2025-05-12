@@ -19,7 +19,6 @@ def gen_configs(new_params):
         configs["experiment_name"] = exp_name
 
     # Checkpoint directory
-    # TODO: mettere la directory direttamente col name
     if configs.get("checkpoint_dir") is None:
         output_dir = "src/ckpts"
         configs["checkpoint_dir"] = output_dir
@@ -27,7 +26,7 @@ def gen_configs(new_params):
 
     # Dump configuration file
     fname = configs["experiment_name"] + ".yaml"
-    output_dir = "src/configs"
+    output_dir = os.path.join("src/configs", configs["dataset"])
     os.makedirs(output_dir, exist_ok=True)
 
     output_path = os.path.join(output_dir, fname)
@@ -40,7 +39,7 @@ def gen_configs(new_params):
 
 
 if __name__ == "__main__":
-    MODEL = "sbert"
+    MODEL = "distilbert"
     DATASET = "merged"
     NUM_EPOCHS = 50
     ALPHA = 16
