@@ -7,9 +7,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, balanced_accuracy_score
 
 from datasets import load_from_disk
-from transformers import pipeline
+from transformers import set_seed, pipeline
 
-from utils.misc_utils import set_seeds, LOG
+from utils.misc_utils import LOG
 
 
 def get_dataset(opts):
@@ -31,6 +31,8 @@ def bert_features(texts, bert_name):
         checkpoint = "distilbert-base-uncased"
     elif bert_name == "scibert":
         checkpoint = "allenai/scibert_scivocab_uncased"
+    elif bert_name == "sbert":
+        checkpoint = "all-MiniLM-L6-v2"
     else:
         raise ValueError(f"Unknown BERT model {bert_name}")
 
@@ -48,22 +50,18 @@ def bert_features(texts, bert_name):
     return np.vstack((features))
 
 
-# TODO: sbert_features()
-
-
 def main(opts):
     """Extract features and train classifier"""
-    set_seeds(opts.seed)
+    set_seed(opts.seed)
     # Get train-val split
     trainset, valset = get_dataset(opts)
 
     train_labels = np.array(trainset["label"])
     val_labels = np.array(valset["label"])
     # Extract features
-    if opts.extractor in ("distilbert", "scibert"):
+    if opts.extractor in ("distilbert", "scibert", "sbert"):
         train_features = bert_features(trainset["text"], opts.extractor)
         val_features = bert_features(valset["text"], opts.extractor)
-    # TODO: SBERT and other integrations
     else:
         raise ValueError(f"Unknown extractor {opts.extractor}")
 
@@ -101,7 +99,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="abstrct", choices=["abstrct", "aae2", "merged"],
                         help="Choose dataset to obtain baseline with")
-    parser.add_argument("--extractor", default="distilbert", choices=["distilbert", "scibert"],
+    parser.add_argument("--extractor", default="distilbert",
+                        choices=["distilbert", "scibert", "sbert"],
                         help="Choose the feature extractor")
     parser.add_argument("--classifier", default="svm", choices=["svm", "logistic"],
                         help="Classifier to train ontop of DistilBERT features")

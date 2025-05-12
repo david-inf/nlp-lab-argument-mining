@@ -2,6 +2,7 @@
 
 import os
 from types import SimpleNamespace
+
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from peft import LoraConfig, TaskType, get_peft_model
 
@@ -9,13 +10,16 @@ from peft import LoraConfig, TaskType, get_peft_model
 def get_bert(opts):
     """
     Get BERT pretrained model and its tokenizer for finetuning
-    - DistilBERT
-    - SciBERT
+    - DistilBERT (uncased)
+    - SciBERT (uncased)
+    - SentenceBERT (MiniLM-L6)
     """
     if opts.model == "distilbert":
         checkpoint = "distilbert-base-uncased"
     elif opts.model == "scibert":
         checkpoint = "allenai/scibert_scivocab_uncased"
+    elif opts.model == "sbert":
+        checkpoint = "sentence-transformers/all-MiniLM-L6-v2"
     else:
         raise ValueError(f"Unknown BERT model {opts.model}")
 
@@ -24,7 +28,6 @@ def get_bert(opts):
         checkpoint, num_labels=2)
     
     tokenizer, model = _finetuning_setting(opts, tokenizer, model)
-
     return tokenizer, model
 
 

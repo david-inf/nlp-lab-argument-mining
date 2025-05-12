@@ -83,7 +83,6 @@ def main(opts):
     # Get tokenizer
     from models import get_bert
     tokenizer: PreTrainedTokenizer = get_bert(opts)[0]
-    # TODO: sbert and other integrations
     # Get loaders
     train_loader, val_loader = get_loaders(opts, tokenizer)
 

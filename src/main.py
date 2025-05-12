@@ -1,6 +1,7 @@
 """Main program for finetuning a BERT family model"""
 
 import os
+from types import SimpleNamespace
 # from comet_ml import start
 import torch
 from torch.optim import AdamW
@@ -9,16 +10,15 @@ from accelerate import Accelerator
 from transformers import set_seed, get_cosine_schedule_with_warmup, PreTrainedModel
 
 from ftdata import get_loaders
-from models.distilbert import get_bert
+from models.bert import get_bert
 from utils.misc_utils import LOG, visualize, update_yaml
 from train import train_loop
 
 
 def get_model(opts):
     """Get model to finetune"""
-    if opts.model in ("distilbert", "scibert"):
+    if opts.model in ("distilbert", "scibert", "sbert"):
         tokenizer, model = get_bert(opts)
-    # TODO: sbert and other integrations
     else:
         raise ValueError(f"Unknown model {opts.model}")
     return tokenizer, model
@@ -26,25 +26,25 @@ def get_model(opts):
 
 def get_optimization(opts, model: PreTrainedModel, train_loader):
     """Optimizer and LRScheduler settings"""
-    configs = opts.ft_setting  # dict
+    configs = SimpleNamespace(**opts.ft_setting)  # dict
     head_params = [p for name, p in model.named_parameters()
                    if "classifier" in name]
     backbone_params = [
         p for name, p in model.named_parameters() if "classifier" not in name]
     params = [
-        {"params": head_params, "lr": configs["lr_head"]},
+        {"params": head_params, "lr": configs.lr_head},
         {"params": backbone_params},
     ]
     optimizer = AdamW(
         params,
-        lr=opts.learning_rate,
-        weight_decay=opts.weight_decay
+        lr=configs.lr_backbone,
+        weight_decay=configs.weight_decay
     )
 
     total_steps = opts.num_epochs * len(train_loader)
     scheduler = get_cosine_schedule_with_warmup(
         optimizer,
-        int(opts.warmup*total_steps),
+        int(configs.warmup*total_steps),
         total_steps
     )
 
@@ -86,9 +86,8 @@ def main(opts):
 
 
 def view_model(opts):
-    """DistilBERT inspection"""
+    """BERT inspection"""
     # Get BERT and tokenizer
-    # TODO: sbert and other integrations
     tokenizer, model = get_model(opts)
 
     # Random data for input_ids and attention_mask

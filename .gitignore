@@ -163,7 +163,7 @@ cython_debug/
 /data/finetuning
 /data
 
-src/ckps
+src/ckpts
 
 src/commands.sh
 *.ods
