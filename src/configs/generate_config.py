@@ -7,7 +7,7 @@ import yaml
 def gen_configs(new_params):
     """Generate a configuration file given the params dict"""
     configs = {
-        "seed": 42, "batch_size": 32, "num_workers": 4,
+        "seed": 42, "batch_size": 32, "num_workers": 4, "max_length": 128,
         "checkpoint": None, "checkpoint_every": None, "log_every": 20,
     }
     configs.update(new_params)
@@ -20,13 +20,13 @@ def gen_configs(new_params):
 
     # Checkpoint directory
     if configs.get("checkpoint_dir") is None:
-        output_dir = os.path.join("src/ckpts", configs["model"])
+        output_dir = "src/ckpts"
         configs["checkpoint_dir"] = output_dir
     os.makedirs(configs["checkpoint_dir"], exist_ok=True)
 
     # Dump configuration file
     fname = configs["experiment_name"] + ".yaml"
-    output_dir = os.path.join("src/configs", configs["model"])
+    output_dir = "src/configs"
     os.makedirs(output_dir, exist_ok=True)
 
     output_path = os.path.join(output_dir, fname)
@@ -39,36 +39,29 @@ def gen_configs(new_params):
 
 
 if __name__ == "__main__":
-    MODEL = "distilbert"
-    DATASET = "abstrct"
+    MODEL = "sbert"
+    DATASET = "merged"
     NUM_EPOCHS = 50
-
+    ALPHA = 16
+    EARLY_STOPPING = {"patience": 7, "min_delta": 0.001}
     new_configs = [
         # Full finetuning
-        {"model": MODEL, "dataset": DATASET, "max_length": 128,
-         "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
-         "early_stopping": {"patience": 5, "min_delta": 0.002},
+        {"model": MODEL, "num_epochs": NUM_EPOCHS, "dataset": DATASET,
+         "early_stopping": EARLY_STOPPING,
          "ft_setting": {
-             "type": "full", "ftname": "full", "lr_head": 0.001
+             "type": "full", "ftname": "full", "lr_head": 0.0001,
+             "lr_backbone": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
          }
          },
         # LoRA finetuning
-        # {"model": MODEL, "dataset": DATASET, "max_length": 128,
-        #  "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
-        #  "early_stopping": {"patience": 5, "min_delta": 0.002},
+        # {"model": MODEL, "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5,
+        #  "dataset": DATASET, "weight_decay": 0.01, "warmup": 0.05,
+        #  "early_stopping": EARLY_STOPPING,
         #  "ft_setting": {
-        #      "type": "lora", "rank": 2, "alpha": 8, "target_modules": ["q_lin"],
-        #      "ftname": "lora_q_2"},
-        # },
-        # {"model": MODEL, "dataset": DATASET, "max_length": 128,
-        #  "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
-        #  "early_stopping": {"patience": 5, "min_delta": 0.002},
-        #  "ft_setting": {
-        #      "type": "lora", "ftname": "lora_qv_4", "rank": 2, "alpha": 8,
-        #      "target_modules": ["q_lin", "v_lin"],
-        #      "lr_head": 0.01,
-        #      },
-        # },
+        #      "type": "lora", "rank": 8, "alpha": ALPHA, "target_modules": ["q_lin", "v_lin"],
+        #      "lr_head": 0.0001, "ftname": "lora_q_4"
+        #  },
+        #  },
     ]
 
     for params_dict in new_configs:
