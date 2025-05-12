@@ -168,4 +168,8 @@ src/ckpts
 src/commands.sh
 *.ods
 *.ods#
+
 inference_data.py
+
+push_dataset.py
+push_model.py
