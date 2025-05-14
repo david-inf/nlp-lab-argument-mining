@@ -1,12 +1,13 @@
 batch_size: 32
-checkpoint: null
+checkpoint: src/ckpts/distilbert_full_sciarg
 checkpoint_dir: src/ckpts
 checkpoint_every: null
-dataset: aae2
+config_file: src/configs/sciarg/distilbert_full_sciarg.yaml
+dataset: sciarg
 early_stopping:
   min_delta: 0.001
   patience: 7
-experiment_name: distilbert_full_aae2
+experiment_name: distilbert_full_sciarg
 ft_setting:
   ftname: full
   lr_backbone: 5.0e-05
@@ -20,3 +21,4 @@ model: distilbert
 num_epochs: 50
 num_workers: 4
 seed: 42
+visualize: false

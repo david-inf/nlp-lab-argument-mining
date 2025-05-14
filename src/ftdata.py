@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from torch.utils.data import DataLoader
-from datasets import load_from_disk, Dataset
+from datasets import load_from_disk, Dataset, load_dataset
 from transformers import set_seed, DataCollatorWithPadding, PreTrainedTokenizer
 
 from utils import LOG
@@ -43,11 +43,10 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     """Load finetuning dataset"""
     # 1) Get dataset splits
     if opts.dataset == "abstrct":
-        dataset = load_from_disk("data/finetuning/abstrct")
-    elif opts.dataset == "aae2":
-        dataset = load_from_disk("data/finetuning/aae2")
-    elif opts.dataset == "merged":
-        dataset = load_from_disk("data/finetuning/merged")
+        # TODO: check this
+        dataset = load_dataset("david-inf/am-nlp-mixed")
+    elif opts.dataset == "sciarg":
+        dataset = load_dataset("david-inf/am-nlp-sciarg")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
 
@@ -55,7 +54,7 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     def preprocess(sample):
         return tokenizer(
             # tokenize the text without padding, whatever length
-            sample["text"],
+            sample["texts"],
             # truncate to specified length if necessary, iff str exceeds
             max_length=opts.max_length,  # 128
             truncation=True,
@@ -66,7 +65,7 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
 
     tokenized_dataset = dataset.map(
         preprocess, batched=True, num_proc=2,
-        remove_columns=["text"], desc="Tokenizing")
+        remove_columns=["texts"], desc="Tokenizing")
     trainset = tokenized_dataset["train"]
     valset = tokenized_dataset["validation"]
 
