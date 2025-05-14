@@ -44,7 +44,7 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     # 1) Get dataset splits
     if opts.dataset == "abstrct":
         # TODO: check this
-        dataset = load_dataset("david-inf/am-nlp-mixed")
+        dataset = load_dataset("david-inf/am-nlp-abstrct")
     elif opts.dataset == "sciarg":
         dataset = load_dataset("david-inf/am-nlp-sciarg")
     else:

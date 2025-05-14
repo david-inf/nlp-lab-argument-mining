@@ -2,11 +2,10 @@
 
 import numpy as np
 
-from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, balanced_accuracy_score
 
-from datasets import load_from_disk
+from datasets import load_dataset
 from transformers import set_seed, pipeline
 
 from utils.misc_utils import LOG
@@ -15,11 +14,9 @@ from utils.misc_utils import LOG
 def get_dataset(opts):
     """Dataset splits"""
     if opts.dataset == "abstrct":
-        dataset = load_from_disk("data/finetuning/abstrct")
-    elif opts.dataset == "aae2":
-        dataset = load_from_disk("data/finetuning/aae2")
-    elif opts.dataset == "merged":
-        dataset = load_from_disk("data/finetuning/merged")
+        dataset = load_dataset("david-inf/am-nlp-abstrct")
+    elif opts.dataset == "sciarg":
+        dataset = load_dataset("david-inf/am-nlp-sciarg")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
     return dataset["train"], dataset["validation"]
@@ -32,7 +29,7 @@ def bert_features(texts, bert_name):
     elif bert_name == "scibert":
         checkpoint = "allenai/scibert_scivocab_uncased"
     elif bert_name == "sbert":
-        checkpoint = "all-MiniLM-L6-v2"
+        checkpoint = "sentence-transformers/all-MiniLM-L6-v2"
     else:
         raise ValueError(f"Unknown BERT model {bert_name}")
 
@@ -66,14 +63,8 @@ def main(opts):
         raise ValueError(f"Unknown extractor {opts.extractor}")
 
     # Train classifier and do inference
-    if opts.classifier == "svm":
-        LOG.info("LinearSVC classifier")
-        clf = LinearSVC()
-    elif opts.classifier == "logistic":
-        LOG.info("LogisticRegression classifier")
-        clf = LogisticRegression()
-    else:
-        raise ValueError(f"Unknown classifier {opts.classifier}")
+    LOG.info("LogisticRegression classifier")
+    clf = LogisticRegression()
 
     # Fit and compute metrics
     clf.fit(train_features, train_labels)
@@ -102,12 +93,10 @@ if __name__ == "__main__":
     parser.add_argument("--extractor", default="distilbert",
                         choices=["distilbert", "scibert", "sbert"],
                         help="Choose the feature extractor")
-    parser.add_argument("--classifier", default="svm", choices=["svm", "logistic"],
-                        help="Classifier to train ontop of DistilBERT features")
     args = parser.parse_args()
 
     configs = dict(seed=42, dataset=args.dataset, batch_size=32, device="cuda",
-                   extractor=args.extractor, classifier=args.classifier)
+                   extractor=args.extractor)
     args = SimpleNamespace(**configs)
 
     try:
