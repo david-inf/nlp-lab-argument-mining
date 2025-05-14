@@ -39,10 +39,10 @@ def gen_configs(new_params):
 
 
 if __name__ == "__main__":
-    MODEL = "distilbert"
-    DATASET = "merged"
+    MODEL = "scibert"
+    DATASET = "sciarg"
     NUM_EPOCHS = 50
-    ALPHA = 16
+    ALPHA = 32
     EARLY_STOPPING = {"patience": 7, "min_delta": 0.001}
     new_configs = [
         # Full finetuning
@@ -53,15 +53,6 @@ if __name__ == "__main__":
              "lr_backbone": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
          }
          },
-        # LoRA finetuning
-        # {"model": MODEL, "num_epochs": NUM_EPOCHS, "learning_rate": 5e-5,
-        #  "dataset": DATASET, "weight_decay": 0.01, "warmup": 0.05,
-        #  "early_stopping": EARLY_STOPPING,
-        #  "ft_setting": {
-        #      "type": "lora", "rank": 8, "alpha": ALPHA, "target_modules": ["q_lin", "v_lin"],
-        #      "lr_head": 0.0001, "ftname": "lora_q_4"
-        #  },
-        #  },
     ]
 
     for params_dict in new_configs:

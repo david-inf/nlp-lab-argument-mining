@@ -25,7 +25,7 @@ def get_bert(opts):
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     model = AutoModelForSequenceClassification.from_pretrained(
         checkpoint, num_labels=3)
-
+    
     tokenizer, model = _finetuning_setting(opts, tokenizer, model)
     return tokenizer, model
 
