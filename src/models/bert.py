@@ -1,6 +1,5 @@
 """BERT family models for sequence classification"""
 
-import os
 from types import SimpleNamespace
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -25,23 +24,9 @@ def get_bert(opts):
 
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     model = AutoModelForSequenceClassification.from_pretrained(
-        checkpoint, num_labels=2)
-    
+        checkpoint, num_labels=3)
+
     tokenizer, model = _finetuning_setting(opts, tokenizer, model)
-    return tokenizer, model
-
-
-# TODO: single function for inference?
-def get_finetuned_bert(opts):
-    """Load finetuned BERT model"""
-    # check if directory where pretrained model is saved exists
-    if not os.path.exists(opts.checkpoint):
-        raise ValueError(f"Pretrained model directory {opts.checkpoint} does not exist")
-
-    tokenizer = AutoTokenizer.from_pretrained(opts.checkpoint)
-    model = AutoModelForSequenceClassification.from_pretrained(
-        opts.checkpoint, num_labels=2)
-
     return tokenizer, model
 
 
