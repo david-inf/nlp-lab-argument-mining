@@ -44,9 +44,13 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     # 1) Get dataset splits
     if opts.dataset == "abstrct":
         # TODO: check this
-        dataset = load_dataset("david-inf/am-nlp-abstrct")
+        # dataset = load_dataset("david-inf/am-nlp-abstrct")
+        dataset = load_from_disk("data/abstrct")
     elif opts.dataset == "sciarg":
-        dataset = load_dataset("david-inf/am-nlp-sciarg")
+        # dataset = load_dataset("david-inf/am-nlp-sciarg")
+        dataset = load_from_disk("data/sciarg")
+    elif opts.dataset == "mixed":
+        dataset = load_from_disk("data/mixed")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
 
@@ -54,7 +58,7 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     def preprocess(sample):
         return tokenizer(
             # tokenize the text without padding, whatever length
-            sample["texts"],
+            sample["text"],
             # truncate to specified length if necessary, iff str exceeds
             max_length=opts.max_length,  # 128
             truncation=True,
@@ -65,11 +69,20 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
 
     tokenized_dataset = dataset.map(
         preprocess, batched=True, num_proc=2,
-        remove_columns=["texts"], desc="Tokenizing")
+        remove_columns=["text"], desc="Tokenizing")
     trainset = tokenized_dataset["train"]
     valset = tokenized_dataset["validation"]
 
-    # 3) Loaders
+    # 3) Class distribution
+    unique, counts = np.unique(trainset["label"], return_counts=True)
+    size = len(trainset["label"])
+    print(unique, counts / size)
+
+    unique, counts = np.unique(valset["label"], return_counts=True)
+    size = len(valset["label"])
+    print(unique, counts / size)
+
+    # 4) Loaders
     loaders = MakeDataLoaders(opts, tokenizer, trainset, valset)
     train_loader = loaders.train_loader
     val_loader = loaders.val_loader

@@ -12,12 +12,11 @@ def N(x):
     return x.detach().cpu().numpy()
 
 
-def load_model(device):
+def load_model(checkpoint, device):
     """Load model from hub"""
-    checkpoint = "david-inf/bert-sci-am"
     model = AutoModelForSequenceClassification.from_pretrained(
         checkpoint, num_labels=3)
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
     model.to(device)
     return model, tokenizer
 
@@ -50,7 +49,11 @@ def inference(dataset, tokenizer, model, device):
 if __name__ == "__main__":
     device = "cuda:1"
     dataset = load_from_disk("data/inference")
-    model, tokenizer = load_model(device)
+    # checkpoint = "david-inf/bert-sci-am"
+    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_abstrct"
+    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_sciarg"
+    checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_mixed"
+    model, tokenizer = load_model(checkpoint, device)
 
     m_scores = inference(dataset["molecular"], tokenizer, model, device)
     t_scores = inference(dataset["thoracic"], tokenizer, model, device)
@@ -59,4 +62,7 @@ if __name__ == "__main__":
     plot_graph(np.array(t_scores), axs[0], "Molecular")
     plot_graph(np.array(m_scores), axs[1], "Thoracic")
     plt.tight_layout()
-    plt.savefig("inference/results.svg")
+
+    # plt.savefig("inference/sbert_abstrct.svg")
+    # plt.savefig("inference/sbert_sciarg.svg")
+    plt.savefig("inference/sbert_mixed.svg")
