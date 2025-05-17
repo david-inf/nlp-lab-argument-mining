@@ -166,8 +166,8 @@ cython_debug/
 src/ckpts
 
 src/commands.sh
-commands1.sh
-commands2.sh
+/commands1.sh
+/commands2.sh
 
 *.ods
 *.ods#

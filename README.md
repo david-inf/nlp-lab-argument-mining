@@ -59,3 +59,23 @@ Use a feature extraction pipeline to obtain a baseline to improve with finetunin
 
 
 ## Phase 2: Deploy BERT on medical literature
+
+For example, do inference on cuda with metrics pair 1
+
+```bash
+python inference/inference.py --device cuda --metric_id 1
+```
+
+<p align="middle">
+  <img src="inference/results/plot_0.svg", alt="metrics pair 0", width=25%>
+  &nbsp;
+  <img src="inference/results/plot_1.svg", alt="metrics pair 1", width=25%>
+  &nbsp;
+  <img src="inference/results/plot_2.svg", alt="metrics pair 2", width=25%>
+</p>
+
+<p align="middle">
+  <img src="inference/results/plot_3.svg", alt="metrics pair 3", width=25%>
+  &nbsp;
+  <img src="inference/results/plot_4.svg", alt="metrics pair 0", width=25%>
+</p>

@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 from rich.logging import RichHandler
 
 
+def N(x: torch.Tensor):
+    return x.detach().cpu().numpy()
+
+
 def get_logger():
     """Logging mechanism"""
     FORMAT = "%(message)s"
@@ -67,14 +71,35 @@ def argscore_argratio(logits, metric_id):
     num_premises = class_counts["0"]
 
     if metric_id == 0:
-        xlab = "AR (number of claims)"
-        ylab = "AS ()"
-        # number of sentences predicted as claim (class 1 or 2)
-        xmetric = num_claims
+        xlab = "PR (fraction of premises)"
+        ylab = "AS (max claim score divided by logits)"
+        # fraction of sentences predicted as premises (class 0)
+        xmetric = num_premises / num_sents
         # 
-        ymetric = None
+        sum_of_logits = logits[:, 1:].sum()  # scalar
+        max_claim_logits = logits[:, 1:].max(axis=1)  # [N]
+        ymetric = max_claim_logits.sum() / sum_of_logits  # scalar
 
     elif metric_id == 1:
+        xlab = "PR (fraction of premises)"
+        ylab = "AS (mean max claim score)"
+        # number of sentences predicted as claim (class 1 or 2)
+        xmetric = num_premises / num_sents
+        # 
+        max_claim_logits = logits[:, 1:].max(axis=1)  # [N]
+        ymetric = max_claim_logits.sum() / num_sents
+
+    elif metric_id == 2:
+        xlab = "AR (number of claims)"
+        ylab = "AS (topk claim score)"
+        # number of claims
+        xmetric = num_claims
+        # topk scores
+        k = 10
+        topk = torch.topk(torch.from_numpy(logits[:, 1:]), k, dim=0).values
+        ymetric = topk.sum().numpy() / (k*2)
+
+    elif metric_id == 3:
         xlab = "AR (fraction of claims)"
         ylab = "AS (mean claim score)"
         # fraction of sentences predicted as claim (class 1 or 2)
@@ -83,16 +108,17 @@ def argscore_argratio(logits, metric_id):
         # (mean class 1 + mean class 2) / 2
         ymetric = logits[:, 1:].sum() / (num_sents*2)
 
-    elif metric_id == 2:
+    elif metric_id == 4:
         xlab = "AR (fraction of claims)"
         ylab = "AS (topk claim score)"
         # fraction of sentences predicted as claim (class 1 or 2)
         xmetric = num_claims / num_sents
         # topk argumentative score (compute as then choose topk)
-        topk = torch.topk(torch.from_numpy(logits[:, 1:]), 10, dim=0).values
-        ymetric = topk.sum().numpy() / num_sents
+        k = 10
+        topk = torch.topk(torch.from_numpy(logits[:, 1:]), k, dim=0).values
+        ymetric = topk.sum().numpy() / (k*2)
 
-    # elif metric_id == 3:
+    # elif metric_id == 4:
     #     xlab = "AR (fraction of claims)"
     #     ylab = "AS (scores on scores)"
 

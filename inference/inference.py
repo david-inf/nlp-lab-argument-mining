@@ -7,11 +7,8 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from datasets import load_from_disk
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from utils import plot_graph, LOG, argscore_argratio
 
-
-def N(x):
-    return x.detach().cpu().numpy()
+from inf_utils import N, plot_graph, argscore_argratio, LOG
 
 
 def load_model(checkpoint, device):
@@ -27,7 +24,7 @@ def load_model(checkpoint, device):
 def inference(dataset, model, tokenizer, device, metric_id):
     """Load inference dataset and compute argumentative content metrics"""
     model.eval()
-    metrics_per_abstract = []
+    metrics_per_abstract = []  # list of list (len 3)
     with torch.no_grad():
         for doc in tqdm(dataset, desc="Documents", unit="doc"):
             # 0: premise - 1: claim - 2: majclaim (abstrct+sciarg dataset)
@@ -36,7 +33,8 @@ def inference(dataset, model, tokenizer, device, metric_id):
                 doc["sentences"],  # list of str
                 max_length=128,  # max sentence length
                 truncation=True,  # truncate if exceeds max_length
-                padding="longest",  # all sentences are padded to reach 128 tokens
+                # all sentences are padded to min(128, longest_seq)
+                padding="longest",
                 return_attention_mask=True,  # avoids padding tokens
                 return_tensors="pt",  # return torch.Tensor
             ).to(device)
@@ -47,19 +45,6 @@ def inference(dataset, model, tokenizer, device, metric_id):
             # output.logits -> [N_i, 3]
             output = model(input_ids=input_ids, attention_mask=attention_mask)
 
-            # predicition and its logit
-            # scalar, sum logits for claims and premises
-            # sum_of_logits = N(output.logits).sum()
-            # max_claim_logits = N(output.logits)[:, 1:].max(axis=1)  # [2]
-            # sum_of_claim_logits = max_claim_logits.sum()  # sum logits for claims
-
-            # compute argumentative score
-            # arg_score = sum_of_claim_logits / sum_of_logits
-            # arg_score = sum_of_claim_logits / input_ids.size(0)
-            # arg_score = np.max(N(output.logits)) / input_ids.size(0)
-            # arg_score = torch.topk(torch.from_numpy(
-            #     max_claim_logits), 10).values.sum().numpy() / input_ids.size(0)
-            
             metrics = argscore_argratio(N(output.logits), metric_id)
             arg_ratio, arg_score = metrics.values()
             xlab, ylab = metrics.keys()
@@ -71,36 +56,56 @@ def inference(dataset, model, tokenizer, device, metric_id):
             #         arg_ratio, arg_score, sum_of_logits, sum_of_claim_logits)
             metrics_per_abstract.append([arg_ratio, arg_score, label])
 
-    return metrics_per_abstract, xlab, ylab  # list of list (len 2)
+    return metrics_per_abstract, xlab, ylab
 
 
-# def main(opts):
-
-
-if __name__ == "__main__":
-    device = "cuda:1"
+def main(opts):
+    """Launch inference"""
+    # Load inference dataset (Molecular and Thoracic splits)
     dataset = load_from_disk("data/inference")
-    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_abstrct"
-    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_sciarg"
-    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_mixed"
-    checkpoint = "david-inf/bert-sci-am"
-    model, tokenizer = load_model(checkpoint, device)
+    # Load model and its tokenizer
+    model, tokenizer = load_model(opts.checkpoint, opts.device)
 
-    metric_id = 2
-    # m_loader = get_loader(dataset["molecular"], tokenizer)
-    # m_scores = inference(m_loader, model, device)
+    # Inference on Molecular split
     molecular_scores, xlab, ylab = inference(
-        dataset["molecular"], model, tokenizer, device, metric_id)
-
-    # s_loader = get_loader(dataset["thoracic"], tokenizer)
-    # t_scores = inference(s_loader, model, device)
+        dataset["molecular"], model, tokenizer, opts.device, opts.metric_id)
+    # Inference on Thoracic split
     thoracic_scores, xlab, ylab = inference(
-        dataset["thoracic"], model, tokenizer, device, metric_id)
+        dataset["thoracic"], model, tokenizer, opts.device, opts.metric_id)
 
+    # Plot results
     _, axs = plt.subplots(1, 2, figsize=(10, 6), sharex=True, sharey=True)
     plot_graph(np.array(molecular_scores), axs[0], "Molecular", xlab, ylab)
     plot_graph(np.array(thoracic_scores), axs[1], "Thoracic", xlab, ylab)
 
     plt.tight_layout()
-    output_path = os.path.join("inference", f"plot_{metric_id}.svg")
+    output_path = os.path.join(
+        "inference/results", f"plot_{opts.metric_id}.svg")
+    LOG.info("output_path=%s", {output_path})
     plt.savefig(output_path)
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--device", default="cuda:1",
+                        help="Choose compute device")
+    parser.add_argument("--checkpoint", "-c", default="david-inf/bert-sci-am",
+                        help="Provide model checkpoint")
+    parser.add_argument("--metric_id", "-m", type=int,
+                        help="Specify an id for the metrics pair")
+
+    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_abstrct"
+    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_sciarg"
+    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_mixed"
+
+    args = parser.parse_args()
+    try:
+        main(args)
+    except Exception as e:
+        import ipdb
+        import traceback
+        import sys
+        print("Exception:", e)
+        traceback.print_exc()
+        ipdb.post_mortem(sys.exc_info()[2])
