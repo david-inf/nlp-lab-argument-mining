@@ -39,8 +39,8 @@ def gen_configs(new_params):
 
 
 if __name__ == "__main__":
-    MODEL = "scibert"
-    DATASET = "sciarg"
+    MODEL = "sbert"
+    DATASET = "mixed"
     NUM_EPOCHS = 50
     ALPHA = 32
     EARLY_STOPPING = {"patience": 7, "min_delta": 0.001}

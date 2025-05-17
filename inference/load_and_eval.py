@@ -3,7 +3,7 @@
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from transformers import DataCollatorWithPadding, AutoModelForSequenceClassification, AutoTokenizer
 from sklearn.metrics import confusion_matrix
 
@@ -12,10 +12,17 @@ def N(x):
     return x.detach().cpu().numpy()
 
 
-def load_model():
+def load_model(opts):
     """Load model from hub"""
     # checkpoint = "david-inf/bert-sci-am"
-    checkpoint = "src/ckpts/sbert_full_abstrct"
+    if opts.dataset == "abstrct":
+        checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_abstrct"
+    elif opts.dataset == "sciarg":
+        checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_sciarg"
+    elif opts.dataset == "mixed":
+        checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_mixed"
+    else:
+        raise ValueError(f"Unknown dataset {opts.dataset}")
     model = AutoModelForSequenceClassification.from_pretrained(
         checkpoint, num_labels=3)
     tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
@@ -24,7 +31,11 @@ def load_model():
 
 def get_loader(opts, tokenizer):
     if opts.dataset == "abstrct":
-        dataset = load_dataset("david-inf/am-nlp-mixed")
+        dataset = load_from_disk("data/abstrct")
+    elif opts.dataset == "sciarg":
+        dataset = load_from_disk("data/sciarg")
+    elif opts.dataset == "mixed":
+        dataset = load_from_disk("data/mixed")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
 
@@ -72,7 +83,7 @@ def test(opts, model, loader):
             acc = np.mean(pred == N(y))
             accs.append(acc)
 
-    unique, counts = np.unique(trues)
+    unique, counts = np.unique(trues, return_counts=True)
     print(unique, counts)
     print(confusion_matrix(trues, preds))
 
@@ -80,7 +91,7 @@ def test(opts, model, loader):
 
 
 def main(opts):
-    model, tokenizer = load_model()
+    model, tokenizer = load_model(opts)
     model.to(opts.device)
 
     test_loader = get_loader(opts, tokenizer)
@@ -91,7 +102,7 @@ def main(opts):
 
 if __name__ == "__main__":
     from types import SimpleNamespace
-    configs = {"device": "cuda", "dataset": "abstrct",
+    configs = {"device": "cuda:1", "dataset": "mixed",
                "split_name": "validation"}
     opts = SimpleNamespace(**configs)
     try:
