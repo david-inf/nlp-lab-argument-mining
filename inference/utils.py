@@ -1,7 +1,8 @@
 
+import logging
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
-import logging
 from rich.logging import RichHandler
 
 
@@ -45,4 +46,57 @@ def plot_graph(vals_mat, ax, title, xlab, ylab):
     ax.grid(True)
 
 
-# def argscore_argratio()
+def argscore_argratio(logits, metric_id):
+    """
+    Argumentative score and ratio can be defined in many ways
+
+    Args
+        logits: np.ndarray of shape (N_i, 3) for a single document
+        metric_id: id of the metrics to use
+    """
+    # predictions for current document sentences
+    pred = np.argmax(logits, axis=1)  # (N_i,), class prediction
+
+    class_0 = np.where(pred == 0, 1, 0).sum()  # counts for class 0
+    class_1 = np.where(pred == 1, 1, 0).sum()  # counts for class 1
+    class_2 = np.where(pred == 2, 1, 0).sum()  # counts for class 2
+    class_counts = {"0": class_0, "1": class_1, "2": class_2}
+
+    num_sents = logits.shape[0]  # number of sentences in the current document
+    num_claims = class_counts["1"] + class_counts["2"]  # number of claims
+    num_premises = class_counts["0"]
+
+    if metric_id == 0:
+        xlab = "AR (number of claims)"
+        ylab = "AS ()"
+        # number of sentences predicted as claim (class 1 or 2)
+        xmetric = num_claims
+        # 
+        ymetric = None
+
+    elif metric_id == 1:
+        xlab = "AR (fraction of claims)"
+        ylab = "AS (mean claim score)"
+        # fraction of sentences predicted as claim (class 1 or 2)
+        xmetric = num_claims / num_sents
+        # mean logit for claim classes
+        # (mean class 1 + mean class 2) / 2
+        ymetric = logits[:, 1:].sum() / (num_sents*2)
+
+    elif metric_id == 2:
+        xlab = "AR (fraction of claims)"
+        ylab = "AS (topk claim score)"
+        # fraction of sentences predicted as claim (class 1 or 2)
+        xmetric = num_claims / num_sents
+        # topk argumentative score (compute as then choose topk)
+        topk = torch.topk(torch.from_numpy(logits[:, 1:]), 10, dim=0).values
+        ymetric = topk.sum().numpy() / num_sents
+
+    # elif metric_id == 3:
+    #     xlab = "AR (fraction of claims)"
+    #     ylab = "AS (scores on scores)"
+
+    else:
+        raise ValueError(f"Unknown metric {metric_id}")
+
+    return {xlab: xmetric, ylab: ymetric}
