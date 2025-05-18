@@ -11,14 +11,15 @@ def get_bert(opts):
     Get BERT pretrained model and its tokenizer for finetuning
     - DistilBERT (uncased)
     - SciBERT (uncased)
-    - SentenceBERT (MiniLM-L6)
+    - SentenceBERT (MiniLM-L6 or mpnet)
     """
     if opts.model == "distilbert":
         checkpoint = "distilbert-base-uncased"
     elif opts.model == "scibert":
         checkpoint = "allenai/scibert_scivocab_uncased"
     elif opts.model == "sbert":
-        checkpoint = "sentence-transformers/all-MiniLM-L6-v2"
+        # checkpoint = "sentence-transformers/all-MiniLM-L6-v2"
+        checkpoint = "sentence-transformers/all-mpnet-base-v2"
     else:
         raise ValueError(f"Unknown BERT model {opts.model}")
 
