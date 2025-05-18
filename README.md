@@ -1,25 +1,30 @@
 # BERT for scientific literature Argument Mining
 
-The idea is to deploy a finetuned BERT on scientific literature in order to gain information about the argumentative content of a scientific article from its abstract.
+The idea is to deploy a finetuned BERT on scientific literature in order to gain information about the argumentative content of a scientific articles from medical literature.
 
 <details>
 <summary>Code organization</summary>
 
 - `data/`
-  - `finetuning/`
-  - `inference/`
+  - `finetuning/` AbstRCT and SciArg datasets, and a merged version of these that will be the actual training dataset
+  - `inference/` two sets of medical literature abstracts
+- `inference/`
+  - `inference.py` inference main program on articles from medical literature
+  - `load_and_eval.py` load validation dataset from training and compute validation accuracy
+  - `utils.py` inference utilities
 - `src/`
   - `ckps/`
-  - `configs/`
-  - `models/`
+  - `configs/` configuration files
+    - Contains `generate_config.py` for automatic configuration files generation
+  - `models/` model definitions
   - `results/`
   - `utils/` various utilities in `misc_utils.py` and `train_utils.py`
-  - `baseline.py` baseline with machine learning models to improve
+  - `baseline.py` baseline with base machine learning models to improve
   - `cmd_args.py` main programs arguments
-    - `python src/main_bert.py --help`
+    - `python src/main.py --help`
     - `python src/ftdata.py --help`
   - `ftdata.py` utilities for loading datasets
-  - `main_bert.py` main program for finetuning BERT family models
+  - `main.py` main program for finetuning BERT family models
   - `train.py` training loop
 
 </details>
@@ -27,35 +32,51 @@ The idea is to deploy a finetuned BERT on scientific literature in order to gain
 
 ## Phase 1: Finetuning BERT for argument component detection
 
-Here we search for the best finetuned model on the argument component dection task, that is a binary classification on premise/non-premise classes
+Here we search for the best finetuned model on the argument component detection task, that is a sentence classification task.
 
-### :zero: Dataset
+### :zero: Dataset & Models
 
-- `abstrct` ...details
-- `aae2` ...details
-- `merged` merged previous datasets
+The finetuning dataset is a merged version of the two following datasets
+
+- [pie/abstrct](https://huggingface.co/datasets/pie/abstrct)
+- [pie/sciarg](https://huggingface.co/datasets/pie/sciarg)
+
+Follows models under finetuning:
+
+- [distilbert](https://huggingface.co/distilbert/distilbert-base-uncased)
+- [sbert](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
 
 
 ### :one: Baseline
 
-Use a feature extraction pipeline to obtain a baseline to improve with finetuning.
+Use a feature extraction pipeline to obtain a baseline to improve with finetuning. That is the two models that will be finetuned are here used as feature extractors, on top of their representation, we train a logistic regression as a baseline.
 
-- `python src/baseline.py --dataset "abstrct" --extractor "distilbert" --classifier "svm"`
+- `python src/baseline.py --dataset "abstrct" --extractor "distilbert"`
 
-| Extractor for LinearSVC   | size | Dataset | `train_acc` | `val_acc` |
-| ------------------------- | ---- | ------- | ----------- | --------- |
-| `distilbert-base-uncased` | 67M  | AbstRCT | 0.849       | 0.822     |
-
-- `python src/baseline.py --dataset "abstrct" --extractor "distilbert" --classifier "logistic"`
-
-| Extractor for LogisticRegression | size | Dataset | `train_acc` | `val_acc` |
-| -------------------------------- | ---- | ------- | ----------- | --------- |
-| `distilbert-base-uncased`        | 67M  | AbstRCT | 0.840       | 0.822     |
+| Extractor | size  | Dataset | `train_acc` | `val_acc` |
+| -------------------------------- | ----- | ------- | ----------- | --------- |
+| `distilbert`        | 67M   | `mixed` | 0.840       | 0.822     |
+| `sbert`               | 22.7M | `mixed` | 0.          | 0.        |
 
 
 ### :two: Finetuning
 
-- `python src/main.py --config src/configs/distilbert/distilbert_full_merged.yaml`
+- `python src/main.py --config src/configs/mixed/distilbert_full_mixed.yaml`
+- `python src/main.py --config src/configs/mixed/sbert_full_mixed.yaml`
+
+| model        | setting           | val_acc |
+| ------------ | ----------------- | ------- |
+| `distilbert` | `full-finetuning` | 0.      |
+| `sbert`      | `full-finetuning` | 0.      |
 
 
 ## Phase 2: Deploy BERT on medical literature
+
+We deploy the finetuned BERT on two datasets containing medical literature abstracts
+
+### Results
+
+<p align="middle">
+  <img src="" alt="" width="30%">
+  &nbsp;
+</p>
