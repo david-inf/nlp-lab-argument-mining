@@ -104,6 +104,9 @@ We ended up by choosing `sbert` as the best finetuned model.
 
 We deploy the finetuned BERT on two datasets containing medical literature abstracts
 
+See results from the [report](./NLP_project.pdf) with detailed metrics definitions.
+
+<!--
 For example, do inference on cuda with metrics pair 1
 
 ```bash
@@ -123,3 +126,4 @@ python inference/inference.py --device cuda --metric_id 1
   &nbsp;
   <img src="inference/results/plot_4.svg", alt="metrics pair 4" width="30%">
 </p>
+-->
