@@ -51,6 +51,8 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
         dataset = load_from_disk("data/sciarg")
     elif opts.dataset == "mixed":
         dataset = load_from_disk("data/mixed")
+    elif opts.dataset == "ibm":
+        dataset = load_from_disk("data/ibm_dataset")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
 

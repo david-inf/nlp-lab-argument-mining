@@ -1,13 +1,13 @@
 batch_size: 32
-checkpoint: src/ckpts/sbert_full_sciarg
+checkpoint: src/ckpts/sbert_full_ibm
 checkpoint_dir: src/ckpts
 checkpoint_every: null
-config_file: src/configs/sciarg/sbert_full_sciarg.yaml
-dataset: sciarg
+config_file: src/configs/sbert_full_ibm.yaml
+dataset: ibm
 early_stopping:
   min_delta: 0.001
   patience: 7
-experiment_name: sbert_full_sciarg
+experiment_name: sbert_full_ibm
 ft_setting:
   ftname: full
   lr_backbone: 5.0e-05

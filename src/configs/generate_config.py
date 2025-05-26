@@ -26,7 +26,7 @@ def gen_configs(new_params):
 
     # Dump configuration file
     fname = configs["experiment_name"] + ".yaml"
-    output_dir = os.path.join("src/configs", configs["dataset"])
+    output_dir = os.path.join("src/configs")
     os.makedirs(output_dir, exist_ok=True)
 
     output_path = os.path.join(output_dir, fname)
