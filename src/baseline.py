@@ -39,7 +39,9 @@ def bert_features(texts, bert_name):
 
     feature_extractor = pipeline(
         model=checkpoint, tokenizer=checkpoint, task="feature-extraction",
-        device_map="auto", framework="pt", batch_size=32,
+        # device_map="auto",
+        device="cuda:0",
+        framework="pt", batch_size=32,
         tokenize_kwargs=dict(max_length=128, truncation=True))
     # extract features
     extractions = feature_extractor(texts, return_tensors="pt")
@@ -108,4 +110,7 @@ if __name__ == "__main__":
         main(args)
     except Exception:
         import ipdb
-        ipdb.post_mortem()
+        import traceback
+        import sys
+        traceback.print_exc()
+        ipdb.post_mortem(sys.exc_info()[2])

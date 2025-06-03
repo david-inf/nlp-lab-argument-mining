@@ -1,4 +1,6 @@
 
+import os
+import sys
 import random
 import torch
 import numpy as np
@@ -7,7 +9,11 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 from datasets import load_from_disk, Dataset
 from transformers import set_seed, DataCollatorWithPadding, PreTrainedTokenizer
 
-from utils import LOG
+# Ensure the parent directory is in the path for module imports
+sys.path.append(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))  # Add parent directory to path
+
+from src.utils import LOG
 
 
 class MakeDataLoaders:
@@ -27,8 +33,13 @@ class MakeDataLoaders:
             np.random.seed(worker_seed)
             random.seed(worker_seed)
 
+        if sampler is None:
+            shuffle = True
+        else:
+            shuffle = False
+
         self.train_loader = DataLoader(
-            trainset, shuffle=True, batch_size=opts.batch_size,
+            trainset, shuffle=shuffle, batch_size=opts.batch_size,
             num_workers=opts.num_workers, pin_memory=True, generator=generator,
             worker_init_fn=seed_worker, collate_fn=collate_fn, sampler=sampler
         )
@@ -43,7 +54,6 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     """Load finetuning dataset"""
     # 1) Get dataset splits
     if opts.dataset == "abstrct":
-        # TODO: check this
         # dataset = load_dataset("david-inf/am-nlp-abstrct")
         dataset = load_from_disk("data/abstrct")
     elif opts.dataset == "sciarg":
@@ -78,24 +88,33 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     # 3) Class distribution
     unique, counts = np.unique(trainset["label"], return_counts=True)
     size = len(trainset["label"])
-    print(unique, counts / size)
+    print("Trainset size:", counts, "Total:", counts.sum())
+    print("Trainset distrib:", unique, counts / size)
+
+    unique, counts = np.unique(valset["label"], return_counts=True)
+    size = len(valset["label"])
+    print("Valset size:", counts, "Total:", counts.sum())
+    print("Valset distrib:", unique, counts / size)
 
     # 4) Sampler for class imbalance
     if opts.dataset == "ibm":
         # subsampling the majority class
-        weights = 1. / counts
-        weights = weights / np.sum(weights)  # normalize
-        sampler = WeightedRandomSampler(
-            weights=trainset["label"].apply(lambda x: weights[x]).tolist(),
-            num_samples=int(0.25*len(trainset["label"])),
-            replacement=True
-        )
+        class_0 = counts[0]  # data
+        class_1 = counts[1]  # evidence
+        class_2 = counts[2]  # claim
+        mult = 1.5
+        weights = np.array([1., mult*class_0/class_1, mult*class_0/class_2])
+        # weights = weights / np.sum(weights)  # normalize
+        # sampler = WeightedRandomSampler(
+        #     weights=weights,
+        #     num_samples=int(0.25*len(trainset["label"])),
+        #     replacement=True
+        # )
+        sampler = None
+        opts.class_weights = weights.tolist()  # for loss function
+        print(opts.class_weights)
     else:
         sampler = None
-
-    unique, counts = np.unique(valset["label"], return_counts=True)
-    size = len(valset["label"])
-    print(unique, counts / size)
 
     # 4) Loaders
     loaders = MakeDataLoaders(opts, tokenizer, trainset, valset, sampler)
