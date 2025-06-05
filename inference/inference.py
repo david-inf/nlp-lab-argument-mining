@@ -1,14 +1,15 @@
+"""Compute scores per each article and save to CSV"""
 
 import os
 
 import torch
 import numpy as np
+import pandas as pd
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from datasets import load_from_disk
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from inf_utils import N, plot_graph, argscore_argratio, LOG
+from inf_utils import N, LOG, mixed_scores, ibm_scores
 
 
 def load_model(checkpoint, device):
@@ -16,15 +17,15 @@ def load_model(checkpoint, device):
     model = AutoModelForSequenceClassification.from_pretrained(
         checkpoint, num_labels=3)
     tokenizer = AutoTokenizer.from_pretrained(
-        "sentence-transformers/all-MiniLM-L6-v2")
+        "sentence-transformers/all-mpnet-base-v2")
     model.to(device)
     return model, tokenizer
 
 
-def inference(dataset, model, tokenizer, device, metric_id):
+def inference(opts, dataset, model, tokenizer, device):
     """Load inference dataset and compute argumentative content metrics"""
     model.eval()
-    metrics_per_abstract = []  # list of list (len 3)
+    metrics_per_article = []  # list of lists
     with torch.no_grad():
         for doc in tqdm(dataset, desc="Documents", unit="doc"):
             # 0: premise - 1: claim - 2: majclaim (abstrct+sciarg dataset)
@@ -45,18 +46,19 @@ def inference(dataset, model, tokenizer, device, metric_id):
             # output.logits -> [N_i, 3]
             output = model(input_ids=input_ids, attention_mask=attention_mask)
 
-            metrics = argscore_argratio(N(output.logits), metric_id)
-            arg_ratio, arg_score = metrics.values()
-            xlab, ylab = metrics.keys()
+            if opts.ftdata == "mixed":
+                scores = mixed_scores(N(output.logits))
+            else:
+                scores = ibm_scores(N(output.logits))
+            scores.append(label)
+            # scores = [p1, p2, p3,..., label] i.e. a train sample
+            metrics_per_article.append(scores)
 
-            # update metrics for this document
-            # LOG.info("Document stats: sentences=%s, classes=%s, label=%s",
-            #         input_ids.size(0), class_counts, label)
-            # LOG.info("Metrics: AR=%.3f, AS=%.3f, total_logits=%.3f, claim_logits=%.3f",
-            #         arg_ratio, arg_score, sum_of_logits, sum_of_claim_logits)
-            metrics_per_abstract.append([arg_ratio, arg_score, label])
+    df = pd.DataFrame(
+        np.array(metrics_per_article),
+        columns=["PR", "CR", "topkC", "ACS", "APS", "label"])
 
-    return metrics_per_abstract, xlab, ylab
+    return df
 
 
 def main(opts):
@@ -66,23 +68,28 @@ def main(opts):
     # Load model and its tokenizer
     model, tokenizer = load_model(opts.checkpoint, opts.device)
 
+    output_dir = "inference/scores"
+    os.makedirs(output_dir, exist_ok=True)
+
     # Inference on Molecular split
-    molecular_scores, xlab, ylab = inference(
-        dataset["molecular"], model, tokenizer, opts.device, opts.metric_id)
+    molecular_scores_df = inference(
+        opts, dataset["molecular"], model, tokenizer, opts.device)
+
+    molecular_path = os.path.join(
+        output_dir, f"molecular_{opts.ftdata}.csv")
+    molecular_scores_df.to_csv(
+        molecular_path, index=False)
+    LOG.info("Molecular scores saved to CSV at path=%s", {molecular_path})
+
     # Inference on Thoracic split
-    thoracic_scores, xlab, ylab = inference(
-        dataset["thoracic"], model, tokenizer, opts.device, opts.metric_id)
+    thoracic_scores_df = inference(
+        opts, dataset["thoracic"], model, tokenizer, opts.device)
 
-    # Plot results
-    _, axs = plt.subplots(1, 2, figsize=(10, 6), sharex=True, sharey=True)
-    plot_graph(np.array(molecular_scores), axs[0], "Molecular", xlab, ylab)
-    plot_graph(np.array(thoracic_scores), axs[1], "Thoracic", xlab, ylab)
-
-    plt.tight_layout()
-    output_path = os.path.join(
-        "inference/results", f"plot_{opts.metric_id}.svg")
-    LOG.info("output_path=%s", {output_path})
-    plt.savefig(output_path)
+    thoracic_path = os.path.join(
+        output_dir, f"thoracic_{opts.ftdata}.csv")
+    thoracic_scores_df.to_csv(
+        thoracic_path, index=False)
+    LOG.info("Saving thoracic scores to path=%s", {thoracic_path})
 
 
 if __name__ == "__main__":
@@ -90,16 +97,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", default="cuda:1",
                         help="Choose compute device")
-    parser.add_argument("--checkpoint", "-c", default="david-inf/bert-sci-am",
-                        help="Provide model checkpoint")
-    parser.add_argument("--metric_id", "-m", type=int,
-                        help="Specify an id for the metrics pair")
-
-    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_abstrct"
-    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_sciarg"
-    # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_mixed"
-
+    parser.add_argument("--ftdata", choices=["mixed", "ibm"],
+                        help="Choose classifier")
+    # parser.add_argument("--checkpoint", "-c", default="david-inf/bert-sci-am",
+    #                     help="Provide model checkpoint")
     args = parser.parse_args()
+
+    if args.ftdata == "mixed":
+        # checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/distilbert_full_mixed"
+        checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_mixed"
+    else:
+        checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_ibm"
+    args.checkpoint = checkpoint
+
     try:
         main(args)
     except Exception as e:
