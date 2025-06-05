@@ -53,6 +53,9 @@ def inference(opts, dataset, model, tokenizer, device):
             scores.append(label)
             # scores = [p1, p2, p3,..., label] i.e. a train sample
             metrics_per_article.append(scores)
+            # free memory
+            del encoded_doc, input_ids, attention_mask, output
+            torch.cuda.empty_cache()
 
     df = pd.DataFrame(
         np.array(metrics_per_article),

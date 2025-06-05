@@ -68,15 +68,15 @@ def mixed_scores(logits):
 
     num_sents = logits.shape[0]  # number of sentences in the current document
     num_claims = class_counts["1"] + class_counts["2"]  # number of claims
-    num_premises = class_counts["0"]
+    num_premises = class_counts["0"]  # number of premises
 
     prem_ratio = num_premises / num_sents
     claim_ratio = num_claims / num_sents
 
     topk_claim = torch.topk(
         torch.from_numpy(logits[:, 1:]), 10, dim=0).values.sum().numpy() / 10
-    avg_claim_score = logits[:, 1:].max(axis=1).sum() / num_sents
-    avg_prem_score = logits[:, 0].sum() / num_sents
+    avg_claim_score = logits[:, 1:].max(axis=1).sum() / num_claims
+    avg_prem_score = logits[:, 0].sum() / num_premises
 
     return [prem_ratio, claim_ratio, topk_claim, avg_claim_score, avg_prem_score]
 
@@ -96,16 +96,16 @@ def ibm_scores(logits):
     class_2 = np.where(pred == 2, 1, 0).sum()  # counts for class Claim
     class_counts = {"0": class_0, "1": class_1, "2": class_2}
 
-    # num_sents = logits.shape[0]  # number of sentences in the current document
-    # num_claims = class_counts["1"] + class_counts["2"]  # number of claims
-    # num_premises = class_counts["0"]
+    num_sents = logits.shape[0]  # number of sentences in the current document
+    num_claims = class_counts["2"]  # number of claims
+    num_premises = class_counts["1"]  # number of premises
 
-    # prem_ratio = num_premises / num_sents
-    # claim_ratio = num_claims / num_sents
+    prem_ratio = num_premises / num_sents
+    claim_ratio = num_claims / num_sents
 
-    # topk_claim = torch.topk(
-    #     torch.from_numpy(logits[:, 1:]), 10, dim=0).values.sum().numpy() / 10
-    # avg_claim_score = logits[:, 1:].max(axis=1).sum() / num_sents
-    # avg_prem_score = logits[:, 0].sum() / num_sents
+    topk_claim = torch.topk(
+        torch.from_numpy(logits[:, 1:]), 10, dim=0).values.sum().numpy() / 10
+    avg_claim_score = logits[:, 2].max(axis=1).sum() / num_claims
+    avg_prem_score = logits[:, 1].sum() / num_premises
 
     return [prem_ratio, claim_ratio, topk_claim, avg_claim_score, avg_prem_score]
