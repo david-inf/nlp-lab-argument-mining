@@ -1,11 +1,20 @@
 """Quick program for loading a model and evaluating on test data"""
 
+import sys
+import os
+
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
-from datasets import load_dataset, load_from_disk
+from datasets import load_from_disk
 from transformers import DataCollatorWithPadding, AutoModelForSequenceClassification, AutoTokenizer
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
+
+# Ensure the parent directory is in the path for module imports
+sys.path.append(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))  # Add parent directory to path
+
+from src.utils.train_utils import AverageMeter, accuracy, my_f1_score
 
 
 def N(x):
@@ -21,11 +30,14 @@ def load_model(opts):
         checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_sciarg"
     elif opts.dataset == "mixed":
         checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_mixed"
+    elif opts.dataset == "ibm":
+        checkpoint = "/data01/dl24davnar/projects/nlp-lab-argument-mining/src/ckpts/sbert_full_ibm"
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
     model = AutoModelForSequenceClassification.from_pretrained(
         checkpoint, num_labels=3)
-    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+    # tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-mpnet-base-v2")
     return model, tokenizer
 
 
@@ -36,6 +48,8 @@ def get_loader(opts, tokenizer):
         dataset = load_from_disk("data/sciarg")
     elif opts.dataset == "mixed":
         dataset = load_from_disk("data/mixed")
+    elif opts.dataset == "ibm":
+        dataset = load_from_disk("data/ibm_dataset")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
 
@@ -52,6 +66,7 @@ def get_loader(opts, tokenizer):
         )
 
     testset = dataset[opts.split_name]
+    print(testset)
     testset = testset.map(
         preprocess, batched=True, num_proc=2,
         remove_columns=["text"], desc="Tokenizing")
@@ -66,7 +81,7 @@ def get_loader(opts, tokenizer):
 def test(opts, model, loader):
     """Evaluate model on some testset"""
     preds, trues = [], []
-    accs = []
+    accs, f1s = AverageMeter(), AverageMeter()
     model.eval()
     with torch.no_grad():
         for batch in loader:
@@ -80,32 +95,41 @@ def test(opts, model, loader):
             pred = np.argmax(N(output.logits), axis=1)
             preds.extend(pred.tolist())
             trues.extend(N(y).tolist())
-            acc = np.mean(pred == N(y))
-            accs.append(acc)
+
+            acc = accuracy(N(output.logits), N(y))
+            f1 = my_f1_score(N(output.logits), N(y))
+            accs.update(acc, input_ids.size(0))
+            f1s.update(f1, input_ids.size(0))
 
     unique, counts = np.unique(trues, return_counts=True)
     print(unique, counts)
+    unique, counts = np.unique(preds, return_counts=True)
+    print(unique, counts)
     print(confusion_matrix(trues, preds))
+    print(classification_report(trues, preds, digits=3))
 
-    return np.mean(accs)
+    return accs.avg, f1s.avg
 
 
 def main(opts):
     model, tokenizer = load_model(opts)
     model.to(opts.device)
 
-    test_loader = get_loader(opts, tokenizer)
+    val_loader = get_loader(opts, tokenizer)
 
-    test_acc = test(opts, model, test_loader)
-    print("val_acc=%.3f" % test_acc)
+    val_acc, val_f1 = test(opts, model, val_loader)
+    print("val_acc=%.3f" % val_acc)
+    print("val_f1=%.3f" % val_f1)
 
 
 if __name__ == "__main__":
     from types import SimpleNamespace
-    configs = {"device": "cuda:1", "dataset": "mixed",
+    configs = {"device": "cuda:1", "dataset": "ibm",
                "split_name": "validation"}
     opts = SimpleNamespace(**configs)
     try:
         main(opts)
-    except Exception as e:
-        print(e)
+    except Exception:
+        import ipdb, traceback, sys
+        traceback.print_exc()
+        ipdb.post_mortem(sys.exc_info()[2])

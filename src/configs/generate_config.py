@@ -26,7 +26,7 @@ def gen_configs(new_params):
 
     # Dump configuration file
     fname = configs["experiment_name"] + ".yaml"
-    output_dir = os.path.join("src/configs", configs["dataset"])
+    output_dir = os.path.join("src/configs")
     os.makedirs(output_dir, exist_ok=True)
 
     output_path = os.path.join(output_dir, fname)
@@ -39,20 +39,30 @@ def gen_configs(new_params):
 
 
 if __name__ == "__main__":
-    MODEL = "sbert"
-    DATASET = "mixed"
+    MODEL = "distilbert"
+    DATASET = "sciarg"
     NUM_EPOCHS = 50
     ALPHA = 32
     EARLY_STOPPING = {"patience": 7, "min_delta": 0.001}
     new_configs = [
         # Full finetuning
         {"model": MODEL, "num_epochs": NUM_EPOCHS, "dataset": DATASET,
-         "early_stopping": EARLY_STOPPING,
+         "early_stopping": EARLY_STOPPING, "accum_steps": 2,
          "ft_setting": {
-             "type": "full", "ftname": "full", "lr_head": 0.0001,
-             "lr_backbone": 5e-5, "weight_decay": 0.01, "warmup": 0.05,
+             "type": "full", "ftname": "full", "lr_head": 5e-5,
+             "lr_backbone": 5e-6, "weight_decay": 0.001, "warmup": 0.05,
          }
          },
+        # LoRA
+        #  {"model": MODEL, "num_epochs": NUM_EPOCHS, "dataset": DATASET,
+        #  "early_stopping": EARLY_STOPPING, "accum_steps": 4,
+        #  "ft_setting": {
+        #      "type": "lora", "rank": 16, "alpha": ALPHA, "target_modules": ["q"],
+        #      "lr_head": 0.0001, "lr_backbone": 5e-5, "weight_decay": 0.001,
+        #      "warmup": 0.05, "ftname": "lora_q16"
+        #  },
+        #  "log_every": 100,
+        #  },
     ]
 
     for params_dict in new_configs:

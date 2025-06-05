@@ -3,7 +3,8 @@ import os
 import numpy as np
 from transformers import PreTrainedModel
 # from accelerate import Accelerator
-from utils.misc_utils import LOG, update_yaml
+from sklearn.metrics import f1_score
+from src.utils.misc_utils import LOG, update_yaml
 
 
 def accuracy(logits, labels):
@@ -11,6 +12,24 @@ def accuracy(logits, labels):
     pred = np.argmax(logits, axis=1)
     acc = np.mean(pred == labels)
     return acc
+
+
+def my_f1_score(logits, labels):
+    pred = np.argmax(logits, axis=1)
+
+    # weighted 1
+    f1_total = f1_score(labels, pred, average="macro")
+
+    # weighted 2
+    # f1_scores = f1_score(labels, pred, average=None)
+    # value, counts = np.unique(labels, return_counts=True)
+    # class_0 = counts[0]
+    # class_1 = counts[1]
+    # class_2 = counts[2]
+    # weights = np.array([1., class_0/class_1, class_0/class_2])
+    # f1_total = f1_scores.dot(weights) / weights.sum()
+
+    return f1_total  # scalar
 
 
 def save_model(opts, model: PreTrainedModel, fname=None):

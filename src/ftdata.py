@@ -1,19 +1,25 @@
 
+import os
+import sys
 import random
 import torch
 import numpy as np
 
-from torch.utils.data import DataLoader
-from datasets import load_from_disk, Dataset, load_dataset
+from torch.utils.data import DataLoader, WeightedRandomSampler
+from datasets import load_from_disk, Dataset
 from transformers import set_seed, DataCollatorWithPadding, PreTrainedTokenizer
 
-from utils import LOG
+# Ensure the parent directory is in the path for module imports
+sys.path.append(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))  # Add parent directory to path
+
+from src.utils import LOG
 
 
 class MakeDataLoaders:
     """Load data"""
 
-    def __init__(self, opts, tokenizer: PreTrainedTokenizer, trainset: Dataset, valset: Dataset):
+    def __init__(self, opts, tokenizer: PreTrainedTokenizer, trainset: Dataset, valset: Dataset, sampler=None):
         set_seed(opts.seed)
         generator = torch.Generator().manual_seed(opts.seed)
         collate_fn = DataCollatorWithPadding(
@@ -27,10 +33,15 @@ class MakeDataLoaders:
             np.random.seed(worker_seed)
             random.seed(worker_seed)
 
+        if sampler is None:
+            shuffle = True
+        else:
+            shuffle = False
+
         self.train_loader = DataLoader(
-            trainset, shuffle=True, batch_size=opts.batch_size,
+            trainset, shuffle=shuffle, batch_size=opts.batch_size,
             num_workers=opts.num_workers, pin_memory=True, generator=generator,
-            worker_init_fn=seed_worker, collate_fn=collate_fn
+            worker_init_fn=seed_worker, collate_fn=collate_fn, sampler=sampler
         )
         self.val_loader = DataLoader(
             valset, batch_size=opts.batch_size, num_workers=opts.num_workers,
@@ -43,7 +54,6 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     """Load finetuning dataset"""
     # 1) Get dataset splits
     if opts.dataset == "abstrct":
-        # TODO: check this
         # dataset = load_dataset("david-inf/am-nlp-abstrct")
         dataset = load_from_disk("data/abstrct")
     elif opts.dataset == "sciarg":
@@ -51,6 +61,8 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
         dataset = load_from_disk("data/sciarg")
     elif opts.dataset == "mixed":
         dataset = load_from_disk("data/mixed")
+    elif opts.dataset == "ibm":
+        dataset = load_from_disk("data/ibm_dataset")
     else:
         raise ValueError(f"Unknown dataset {opts.dataset}")
 
@@ -76,14 +88,36 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
     # 3) Class distribution
     unique, counts = np.unique(trainset["label"], return_counts=True)
     size = len(trainset["label"])
-    print(unique, counts / size)
+    print("Trainset size:", counts, "Total:", counts.sum())
+    print("Trainset distrib:", unique, counts / size)
 
     unique, counts = np.unique(valset["label"], return_counts=True)
     size = len(valset["label"])
-    print(unique, counts / size)
+    print("Valset size:", counts, "Total:", counts.sum())
+    print("Valset distrib:", unique, counts / size)
+
+    # 4) Sampler for class imbalance
+    if opts.dataset == "ibm":
+        # subsampling the majority class
+        class_0 = counts[0]  # data
+        class_1 = counts[1]  # evidence
+        class_2 = counts[2]  # claim
+        mult = 1.5
+        weights = np.array([1., mult*class_0/class_1, mult*class_0/class_2])
+        # weights = weights / np.sum(weights)  # normalize
+        # sampler = WeightedRandomSampler(
+        #     weights=weights,
+        #     num_samples=int(0.25*len(trainset["label"])),
+        #     replacement=True
+        # )
+        sampler = None
+        opts.class_weights = weights.tolist()  # for loss function
+        print(opts.class_weights)
+    else:
+        sampler = None
 
     # 4) Loaders
-    loaders = MakeDataLoaders(opts, tokenizer, trainset, valset)
+    loaders = MakeDataLoaders(opts, tokenizer, trainset, valset, sampler)
     train_loader = loaders.train_loader
     val_loader = loaders.val_loader
 
@@ -91,7 +125,7 @@ def get_loaders(opts, tokenizer: PreTrainedTokenizer):
 
 
 def main(opts):
-    # TODO: class distribution on full train-val datasets
+    """Inspect finetuning datasets"""
     # Get tokenizer
     from models import get_bert
     tokenizer: PreTrainedTokenizer = get_bert(opts)[0]

@@ -1,6 +1,7 @@
 """Main program for finetuning a BERT family model"""
 
 import os
+import sys
 from types import SimpleNamespace
 
 import torch
@@ -9,10 +10,14 @@ from torch.backends import cudnn
 from accelerate import Accelerator
 from transformers import set_seed, get_cosine_schedule_with_warmup, PreTrainedModel
 
-from ftdata import get_loaders
-from models.bert import get_bert
-from utils.misc_utils import LOG, visualize, update_yaml
-from train import train_loop
+# Ensure the parent directory is in the path for module imports
+sys.path.append(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))  # Add parent directory to path
+
+from src.ftdata import get_loaders
+from src.models.bert import get_bert
+from src.utils.misc_utils import LOG, visualize, update_yaml
+from src.train import train_loop
 
 
 def get_model(opts):
@@ -61,7 +66,8 @@ def main(opts):
     update_yaml(opts, "checkpoint", output_path)
 
     # Accelerator
-    accelerator = Accelerator(mixed_precision="fp16", project_dir=output_path)
+    accelerator = Accelerator(mixed_precision="fp16", project_dir=output_path,
+                              gradient_accumulation_steps=opts.accum_steps)
     LOG.info("Accelerator device=%s", accelerator.device)
 
     # Get BERT and its tokenizer (cpu)
