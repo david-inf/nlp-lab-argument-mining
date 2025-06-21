@@ -70,15 +70,20 @@ def mixed_scores(logits):
     num_claims = class_counts["1"] + class_counts["2"]  # number of claims
     num_premises = class_counts["0"]  # number of premises
 
-    prem_ratio = num_premises / num_sents
-    claim_ratio = num_claims / num_sents
+    prem_ratio = num_premises / num_sents  # premise ratio
+    claim_ratio = num_claims / num_sents  # claim ratio
 
-    topk_claim = torch.topk(
-        torch.from_numpy(logits[:, 1:]), 10, dim=0).values.sum().numpy() / 10
+    topk_claim = torch.topk(  # topk claim score
+        torch.from_numpy(logits[:, 1:]), 10, dim=0).values.sum().numpy() / num_sents
     avg_claim_score = logits[:, 1:].max(axis=1).sum() / num_claims
     avg_prem_score = logits[:, 0].sum() / num_premises
 
-    return [prem_ratio, claim_ratio, topk_claim, avg_claim_score, avg_prem_score]
+    combo1 = avg_claim_score + avg_prem_score
+    combo2 = avg_claim_score * avg_prem_score
+    combo3 = (avg_claim_score + avg_prem_score)**2
+
+    return [prem_ratio, claim_ratio, topk_claim, avg_claim_score,
+            avg_prem_score, combo1, combo2, combo3]
 
 
 def ibm_scores(logits):
@@ -104,7 +109,7 @@ def ibm_scores(logits):
     claim_ratio = num_claims / num_sents
 
     topk_claim = torch.topk(
-        torch.from_numpy(logits[:, 1:]), 10, dim=0).values.sum().numpy() / 10
+        torch.from_numpy(logits[:, 1:]), 10, dim=0).values.sum().numpy() / num_sents
     avg_claim_score = logits[:, 2].max(axis=1).sum() / num_claims
     avg_prem_score = logits[:, 1].sum() / num_premises
 

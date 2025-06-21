@@ -28,7 +28,7 @@ def main(opts):
 
     # Train/test split
     X_train, X_test, y_train, y_test = train_test_split(
-        features, labels, test_size=0.2, random_state=42, stratify=labels)
+        features, labels, test_size=0.3, random_state=42, stratify=labels)
 
     # Feature scaling
     scaler = StandardScaler()
@@ -36,9 +36,10 @@ def main(opts):
     X_test = scaler.transform(X_test)
 
     # Model training
-    model = LogisticRegression()
+    model = LogisticRegression(
+        max_iter=1000, random_state=42, class_weight='balanced', C=10.)
     model.fit(X_train, y_train)
-    print("Training report:")
+    print("\nTraining report:")
     print(classification_report(y_train, model.predict(X_train)))
 
     # Evaluation
@@ -46,10 +47,13 @@ def main(opts):
     print("Test report:")
     print(classification_report(y_test, y_pred))
 
+    # ROC curve
+
     # Save the model
     import joblib
-    model_path = os.path.join("inference", "models", f"{opts.dataset}_{opts.ftdata}_classifier.pkl")
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    output_dir = "inference/models"
+    os.makedirs(output_dir, exist_ok=True)
+    model_path = os.path.join(output_dir, f"{opts.dataset}_{opts.ftdata}_clf.pkl")
     joblib.dump(model, model_path)
     print(f"Model saved to {model_path}")
 
@@ -58,8 +62,9 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--ftdata", choices=["mixed", "ibm"],
+                        default="mixed",
                         help="Choose classifier")
-    parser.add_argument("--dataset", choices=["molecular", "thoracic"],
+    parser.add_argument("--dataset", choices=["molecular", "thoracic", "merge"],
                         help="Choose dataset to train on")
     args = parser.parse_args()
     try:

@@ -59,7 +59,7 @@ def inference(opts, dataset, model, tokenizer, device):
 
     df = pd.DataFrame(
         np.array(metrics_per_article),
-        columns=["PR", "CR", "topkC", "ACS", "APS", "label"])
+        columns=["PR", "CR", "topk", "ACS", "APS", "C1", "C2", "C3", "label"])
 
     return df
 
@@ -94,6 +94,14 @@ def main(opts):
         thoracic_path, index=False)
     LOG.info("Saving thoracic scores to path=%s", {thoracic_path})
 
+    # Molecular + Thoracic
+    merge_scores_df = pd.concat(
+        [molecular_scores_df, thoracic_scores_df], ignore_index=True)
+    merge_path = os.path.join(
+        output_dir, f"merge_{opts.ftdata}.csv")
+    merge_scores_df.to_csv(merge_path, index=False)
+    LOG.info("Merged scores saved to path=%s", {merge_path})
+
 
 if __name__ == "__main__":
     import argparse
@@ -101,7 +109,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="cuda:1",
                         help="Choose compute device")
     parser.add_argument("--ftdata", choices=["mixed", "ibm"],
-                        help="Choose classifier")
+                        default="mixed",
+                        help="Choose finetuned bert")
     # parser.add_argument("--checkpoint", "-c", default="david-inf/bert-sci-am",
     #                     help="Provide model checkpoint")
     args = parser.parse_args()

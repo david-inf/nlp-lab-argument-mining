@@ -178,3 +178,4 @@ push_dataset.py
 push_model.py
 
 /inference/scores/
+/inference/models/
